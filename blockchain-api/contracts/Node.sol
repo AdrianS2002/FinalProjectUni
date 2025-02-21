@@ -2,49 +2,156 @@
 pragma solidity ^0.8.0;
 
 interface GlobalContractInterface {
-    function updateGlobalBestPosition(uint[] calldata newPosition, uint newScore) external;
+    function updateGlobalBestPosition(
+        uint[] calldata newPosition,
+        uint newScore
+    ) external;
     function getGlobalBestPosition() external view returns (uint[] memory);
 }
 
 contract Node {
-    uint[] public position;                // Node's current position (e.g., energy usage)
-    uint[] public velocity;                // Node's current velocity
-    uint[] public personalBestPosition;    // Node's personal best position
-    uint public personalBestScore = type(uint).max;  // Best score achieved by this node
 
-    uint public w = 50;  // Inertia weight
-    uint public c1 = 150;  // Cognitive coefficient
-    uint public c2 = 150;  // Social coefficient
+    // Consum de energie pe ore pt un  nod
+    uint[] public position;
+
+    // Ritmul de modificare a consumului de energie (ajustare a consumului în funcție de tarife și rețea)
+    uint[] public velocity;
+
+    // Cel mai eficient plan de consum al unui nod (ex: cel mai mic cost obținut anterior)
+    uint[] public personalBestPosition;
+
+    // Costul minim de energie obținut pentru un anumit plan de consum
+    uint public personalBestScore = type(uint).max;
+
+    // Parametrii PSO 
+    uint public w = 50; // Inerția
+    uint public c1 = 150; // Coeficient cognitiv
+    uint public c2 = 150; // Coeficient social
+
+    // pret energiei per oră
+    uint[] public tariff;
+
+    // Capacitatea maximă a rețelei pe oră
+    uint[] public capacity;
+
+    // Penalizare pentru depășirea capacității rețelei 
+    uint public penaltyRate;
+
+    // Generarea de energie regenerabilă disponibilă pe oră
+    uint[] public renewableGeneration;
+
+    // Capacitatea bateriei și nivelul actual de încărcare
+    uint[] public batteryCapacity;
+    uint[] public batteryCharge;
+
+    // posibilitatea de a muta consumul în alte ore 
+    uint[] public flexibleLoad;
+
+    // Pragul de cerere de vârf (setat dinamic din backend)
+    uint public peakDemandThreshold;
+
+    // Penalizare pentru depășirea pragului de cerere de vârf
+    uint public peakDemandPenalty;
 
     GlobalContractInterface public globalContract;
 
-    constructor(address globalContractAddress, uint[] memory initialPosition, uint[] memory initialVelocity) {
+    constructor(
+        address globalContractAddress,
+        uint[] memory initialPosition,
+        uint[] memory initialVelocity,
+        uint[] memory initialTariff,
+        uint[] memory initialCapacity,
+        uint[] memory initialRenewableGeneration,
+        uint[] memory initialBatteryCapacity,
+        uint[] memory initialBatteryCharge,
+        uint[] memory initialFlexibleLoad,
+        uint _penaltyRate,
+        uint _peakDemandThreshold,
+        uint _peakDemandPenalty
+    ) {
         globalContract = GlobalContractInterface(globalContractAddress);
         position = initialPosition;
         velocity = initialVelocity;
         personalBestPosition = initialPosition;
+        tariff = initialTariff;
+        capacity = initialCapacity;
+        renewableGeneration = initialRenewableGeneration;
+        batteryCapacity = initialBatteryCapacity;
+        batteryCharge = initialBatteryCharge;
+        flexibleLoad = initialFlexibleLoad;
+        penaltyRate = _penaltyRate;
+        peakDemandThreshold = _peakDemandThreshold;
+        peakDemandPenalty = _peakDemandPenalty;
     }
 
-    // Objective function to be minimized (e.g., energy cost)
-    function objectiveFunction(uint[] memory pos) public pure returns (uint) {
-        uint sum = 0;
+    // Permite backend-ului să actualizeze penalizarea dinamică
+    function updatePenaltyRate(uint _penaltyRate) external {
+        penaltyRate = _penaltyRate;
+    }
+
+    // Permite backend-ului să actualizeze pragul de cerere de vârf
+    function updatePeakDemandThreshold(uint _peakDemandThreshold) external {
+        peakDemandThreshold = _peakDemandThreshold;
+    }
+
+    // Funcție obiectiv pentru optimizarea costurilor
+    function objectiveFunction(uint[] memory pos) public view returns (uint) {
+        uint totalCost = 0;
+
+        uint[] memory tempRenewableGeneration = renewableGeneration;
+        uint[] memory tempBatteryCharge = batteryCharge;
+
         for (uint i = 0; i < pos.length; i++) {
-            sum += pos[i] ** 2;  // Example: Sphere function
+            uint actualConsumption = pos[i];
+
+            // Utilizare energie regenerabilă
+            if (tempRenewableGeneration[i] >= actualConsumption) {
+                actualConsumption = 0;
+                tempRenewableGeneration[i] -= pos[i];
+            } else {
+                actualConsumption -= tempRenewableGeneration[i];
+                tempRenewableGeneration[i] = 0;
+            }
+
+            // Utilizare baterii
+            if (tempBatteryCharge[i] >= actualConsumption) {
+                tempBatteryCharge[i] -= actualConsumption;
+                actualConsumption = 0;
+            } else {
+                actualConsumption -= tempBatteryCharge[i];
+                tempBatteryCharge[i] = 0;
+            }
+
+            // Costuri dinamice pe baza tarifului
+            uint cost = tariff[i] * actualConsumption;
+
+            // Penalizare pentru cerere de vârf
+            if (actualConsumption > peakDemandThreshold) {
+                cost += (actualConsumption - peakDemandThreshold) * peakDemandPenalty;
+            }
+
+            // Penalizare pentru depășirea capacității rețelei
+            if (actualConsumption > capacity[i]) {
+                cost += (actualConsumption - capacity[i]) * penaltyRate;
+            }
+
+            totalCost += cost;
         }
-        return sum;
+
+        return totalCost;
     }
 
-    // Update personal and global best if necessary
+    // Actualizare a celei mai bune poziții personale și globale
     function updateBestPositions() public {
         uint currentScore = objectiveFunction(position);
 
-        // Update personal best
+        // Actualizare a celei mai bune soluții personale
         if (currentScore < personalBestScore) {
             personalBestScore = currentScore;
             personalBestPosition = position;
         }
 
-        // Check if this node has the global best score and update if necessary
+        // Comparare cu cea mai bună poziție globală
         uint[] memory globalBestPosition = globalContract.getGlobalBestPosition();
         uint globalBestScore = objectiveFunction(globalBestPosition);
 
@@ -53,21 +160,26 @@ contract Node {
         }
     }
 
-    // Update velocity and position according to PSO formula
+    // Actualizare a vitezei și a poziției conform PSO
     function updateVelocityAndPosition() public {
         uint[] memory globalBestPosition = globalContract.getGlobalBestPosition();
 
         for (uint i = 0; i < position.length; i++) {
-            uint r1 = uint(keccak256(abi.encodePacked(block.timestamp, i))) % 100;  // Random factor
+            uint r1 = uint(keccak256(abi.encodePacked(block.timestamp, i))) % 100;
             uint r2 = uint(keccak256(abi.encodePacked(block.timestamp, i + 1))) % 100;
 
-            // Update velocity
+            // Calculare nouă viteză conform formulei PSO
             velocity[i] = (w * velocity[i] +
-                           c1 * r1 * (personalBestPosition[i] - position[i]) / 100 +
-                           c2 * r2 * (globalBestPosition[i] - position[i]) / 100) / 100;
+                          c1 * r1 * (personalBestPosition[i] - position[i]) / 100 +
+                          c2 * r2 * (globalBestPosition[i] - position[i]) / 100) / 100;
 
-            // Update position
+            // Actualizare poziție
             position[i] += velocity[i];
+
+            // Aplicare flexibilitate (mutare consum în alte ore)
+            if (position[i] > flexibleLoad[i]) {
+                position[i] -= flexibleLoad[i];
+            }
         }
     }
 }
