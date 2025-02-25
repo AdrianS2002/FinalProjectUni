@@ -4,7 +4,7 @@
   "description": "Make API-Endpoints for Ethereum BlockChain",
   "scripts": {
     "start": "node ./bin/www",
-    "test": "truffle test test/*"
+    "test": "npx hardhat test"
   },
   "license": "MIT",
   "dependencies": {
