@@ -82,7 +82,7 @@ async function main() {
     await globalContract.waitForDeployment();
     console.log("Deployed GlobalContract at:", globalContract.target);
 
-    // Deploy Node using globalContract.target
+    // Deploy Node folosind globalContract.target
     const Node = await ethers.getContractFactory("Node");
     const initialPosition = [10, 20, 30];
     const initialVelocity = [1, 1, 1];
@@ -92,12 +92,9 @@ async function main() {
     const initialBatteryCapacity = [100, 100, 100];
     const initialBatteryCharge = [50, 50, 50];
     const initialFlexibleLoad = [5, 10, 15];
-    const peakDemandThreshold = 75;
-    const peakDemandPenalty = 50;
-    const penaltyRate = 200;
 
     const node = await Node.deploy(
-        globalContract.target,  // use .target here instead of .address
+        globalContract.target,  // se folosește .target în loc de .address
         initialPosition,
         initialVelocity,
         initialTariff,
@@ -105,10 +102,7 @@ async function main() {
         initialRenewableGeneration,
         initialBatteryCapacity,
         initialBatteryCharge,
-        initialFlexibleLoad,
-        penaltyRate,
-        peakDemandThreshold,
-        peakDemandPenalty
+        initialFlexibleLoad
     );
     await node.waitForDeployment();
     console.log("Deployed Node at:", node.target);

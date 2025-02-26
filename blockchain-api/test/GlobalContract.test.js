@@ -1,46 +1,120 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+require("@nomicfoundation/hardhat-chai-matchers");
 
 describe("GlobalContract", function () {
   let GlobalContract, globalContract;
+  let owner, addr1, addr2;
 
-  beforeEach(async () => {
+  beforeEach(async function () {
+    [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
     GlobalContract = await ethers.getContractFactory("GlobalContract");
     globalContract = await GlobalContract.deploy();
     await globalContract.waitForDeployment();
   });
 
-  it("Should initialize with max score", async function () {
-    const globalBestScore = await globalContract.globalBestScore();
-    expect(globalBestScore).to.equal(ethers.MaxUint256);
-  });
-
-  it("Should update global best position and score", async function () {
+  it("should update node result for a new node and set numHours", async function () {
     const newPosition = [10, 20, 30];
     const newScore = 100;
 
-    await globalContract.updateGlobalBestPosition(newPosition, newScore);
+    await globalContract.connect(addr1).updateNodeResult(newPosition, newScore);
 
-    const globalBestPosition = await globalContract.getGlobalBestPosition();
-    const globalBestScore = await globalContract.globalBestScore();
+    const nodeResult = await globalContract.nodeResults(addr1.address);
+    expect(nodeResult.bestScore).to.equal(BigInt(newScore));
 
-    expect(globalBestPosition.map(n => Number(n))).to.deep.equal(newPosition);
-    expect(Number(globalBestScore)).to.equal(newScore);
+    const storedBest = (await globalContract.getBestPosition(addr1.address)).map(n => Number(n));
+    expect(storedBest).to.deep.equal(newPosition);
+
+    expect(nodeResult.exists).to.equal(true);
+
+    // numHours should be set to the length of newPosition (3)
+    expect(Number(await globalContract.numHours())).to.equal(newPosition.length);
+
   });
 
-  it("Should not update if new score is worse", async function () {
-    const betterPosition = [10, 20, 30];
-    const betterScore = 100;
-    await globalContract.updateGlobalBestPosition(betterPosition, betterScore);
 
-    const worsePosition = [5, 15, 25];
-    const worseScore = 200;
-    await globalContract.updateGlobalBestPosition(worsePosition, worseScore);
+  it("should update node result for an existing node with a better score", async function () {
+    const initialPosition = [10, 20, 30];
+    const initialScore = 100;
+    await globalContract.connect(addr1).updateNodeResult(initialPosition, initialScore);
 
-    const globalBestPosition = await globalContract.getGlobalBestPosition();
-    const globalBestScore = await globalContract.globalBestScore();
+    const betterPosition = [5, 15, 25];
+    const betterScore = 50;
+    await globalContract.connect(addr1).updateNodeResult(betterPosition, betterScore);
 
-    expect(globalBestPosition.map(n => Number(n))).to.deep.equal(betterPosition);
-    expect(Number(globalBestScore)).to.equal(betterScore);
+    const nodeResult = await globalContract.nodeResults(addr1.address);
+    expect(nodeResult.bestScore).to.equal(BigInt(betterScore));
+
+    const storedBest = (await globalContract.getBestPosition(addr1.address)).map(n => Number(n));
+    expect(storedBest).to.deep.equal(betterPosition);
+  });
+
+  it("should not update node result if new score is worse", async function () {
+    const initialPosition = [10, 20, 30];
+    const initialScore = 100;
+    await globalContract.connect(addr1).updateNodeResult(initialPosition, initialScore);
+
+    const worsePosition = [1, 2, 3];
+    const worseScore = 150;
+    await globalContract.connect(addr1).updateNodeResult(worsePosition, worseScore);
+
+    const nodeResult = await globalContract.nodeResults(addr1.address);
+    // Valorile trebuie să rămână cele inițiale
+    expect(nodeResult.bestScore).to.equal(BigInt(initialScore));
+  
+    const storedBest = (await globalContract.getBestPosition(addr1.address)).map(n => Number(n));
+    expect(storedBest).to.deep.equal(initialPosition);
+  });
+
+  it("should revert updateNodeResult if newPosition length doesn't match numHours", async function () {
+    const validPosition = [10, 20, 30];
+    const validScore = 100;
+    await globalContract.connect(addr1).updateNodeResult(validPosition, validScore);
+
+    // Încercăm să actualizăm cu un vector de lungime diferită (ex. lungime 2)
+    const invalidPosition = [5, 15];
+    const invalidScore = 80;
+    await expect(
+      globalContract.connect(addr2).updateNodeResult(invalidPosition, invalidScore)
+    ).to.be.revertedWith("Dimensiune necorespunzatoare");
+  });
+
+  it("should compute global optimal plan correctly", async function () {
+    // Setăm rezultatele pentru două noduri (cu același număr de ore: 3)
+    const position1 = [10, 20, 30];
+    const score1 = 100;
+    await globalContract.connect(addr1).updateNodeResult(position1, score1);
+
+    const position2 = [20, 30, 40];
+    const score2 = 80;
+    await globalContract.connect(addr2).updateNodeResult(position2, score2);
+
+    // Calculăm planul global optim
+    await globalContract.computeGlobalOptimalPlan();
+
+    // Pentru fiecare oră, media ar trebui să fie:
+    // ora 0: (10 + 20) / 2 = 15, ora 1: (20 + 30) / 2 = 25, ora 2: (30 + 40) / 2 = 35
+    const expectedPlan = [15, 25, 35];
+
+    const planArray = await globalContract.getGlobalOptimalPlanArray();
+    expect(planArray.map(n => Number(n))).to.deep.equal(expectedPlan);
+
+    // Testăm și funcția getGlobalOptimalPlanHour pentru fiecare oră
+    for (let i = 0; i < expectedPlan.length; i++) {
+      const hourValue = await globalContract.getGlobalOptimalPlanHour(i);
+      expect(Number(hourValue)).to.equal(expectedPlan[i]);
+    }
+  });
+
+  it("should revert computeGlobalOptimalPlan if no nodes registered", async function () {
+    await expect(globalContract.computeGlobalOptimalPlan()).to.be.revertedWith("Niciun nod inregistrat");
+  });
+
+  it("should revert getGlobalOptimalPlanHour for out-of-range hour", async function () {
+    const newPosition = [10, 20, 30];
+    const newScore = 100;
+    await globalContract.connect(addr1).updateNodeResult(newPosition, newScore);
+
+    await expect(globalContract.getGlobalOptimalPlanHour(3)).to.be.revertedWith("Ora in afara intervalului");
   });
 });
