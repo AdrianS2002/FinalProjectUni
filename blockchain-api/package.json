@@ -33,6 +33,7 @@
     "web3": "4.0.2-dev.af57eae.0"
   },
   "devDependencies": {
-    "hardhat": "^2.22.17"
+    "hardhat": "^2.22.17",
+    "sinon": "^19.0.2"
   }
 }

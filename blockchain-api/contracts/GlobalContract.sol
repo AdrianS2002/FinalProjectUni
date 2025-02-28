@@ -8,7 +8,7 @@ pragma solidity ^0.8.0;
 contract GlobalContract {
     struct NodeResult {
         int[] bestPosition;
-        uint bestScore;
+        int bestScore;
         bool exists;
     }
 
@@ -23,14 +23,14 @@ contract GlobalContract {
 
     uint public lastUpdatedTimestamp; // Momentul ultimei actualizări globale
 
-    event NodeResultUpdated(address indexed node, uint bestScore);
+    event NodeResultUpdated(address indexed node, int bestScore);
     event GlobalPlanComputed(int[] newPlan, uint timestamp);
 
     // Nodurile apelează această funcție pentru a-și transmite rezultatul optim.
     // Se folosește un mapping pentru a stoca rezultatele și o listă pentru a itera ulterior.
     function updateNodeResult(
         int[] calldata newPosition,
-        uint newScore
+        int newScore
     ) external {
         if (!nodeResults[msg.sender].exists) {
             nodeResults[msg.sender] = NodeResult(newPosition, newScore, true);

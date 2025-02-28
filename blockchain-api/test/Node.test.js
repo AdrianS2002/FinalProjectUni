@@ -27,7 +27,8 @@ describe("Node Contract", function () {
     const initialBatteryCapacity = [1000, 1000, 1000];
     const initialBatteryCharge = [400, 700, 500];
     const initialFlexibleLoad = [200, 150, 100];
-
+    const flexibilityAbove =  [100,80,20]; // flexibilityAbove
+    const flexibilityBelow = [20,40,5] ;
 
     node = await Node.deploy(
       globalContract.target, // adresa GlobalContract (folosind .target pentru ethers v6)
@@ -38,7 +39,9 @@ describe("Node Contract", function () {
       initialRenewableGeneration,
       initialBatteryCapacity,
       initialBatteryCharge,
-      initialFlexibleLoad
+      initialFlexibleLoad,
+      flexibilityAbove,
+      flexibilityBelow
     );
     await node.waitForDeployment();
   });
@@ -47,7 +50,7 @@ describe("Node Contract", function () {
     // personalBestScore trebuie să fie egal cu uint.max, adică ethers.constants.MaxUint256
     const bestScore = await node.personalBestScore();
     console.log("🔹 Initial Best Score:", bestScore.toString());
-    expect(bestScore).to.equal(ethers.MaxUint256);
+    expect(bestScore).to.equal(ethers.MaxInt256);
   });
 
   it("Should update personal best score after calling updateBestPositions", async function () {

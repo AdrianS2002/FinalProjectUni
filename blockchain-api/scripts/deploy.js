@@ -84,17 +84,32 @@ async function main() {
 
     // Deploy Node folosind globalContract.target
     const Node = await ethers.getContractFactory("Node");
-    const initialPosition = [10, 20, 30];
-    const initialVelocity = [1, 1, 1];
-    const initialTariff = [100, 200, 300];
-    const initialCapacity = [50, 50, 50];
-    const initialRenewableGeneration = [10, 15, 20];
-    const initialBatteryCapacity = [100, 100, 100];
-    const initialBatteryCharge = [50, 50, 50];
-    const initialFlexibleLoad = [5, 10, 15];
+     // Exemplu de valori pentru o rețea electrică cu 24 de ore:
+    // Consum optim de referință: 80 kW pe oră
+    const initialPosition = [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80];
+    // Pornim cu o viteză inițială zero (fără ajustări inițiale)
+    const initialVelocity = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    // Tarife constante, de exemplu 100 (unități monetare per kWh)
+    const initialTariff = [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100];
+    // Capacitate maximă a rețelei (ex: 1000 kW pe oră)
+    const initialCapacity = [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000];
+    // Energia regenerabilă disponibilă, de exemplu 20 kW pe oră
+    const initialRenewableGeneration = [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20];
+    // Capacitatea bateriei, de exemplu 500 kWh per oră
+    const initialBatteryCapacity = [500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500];
+    // Nivelul curent de încărcare a bateriilor, de exemplu 300 kWh
+    const initialBatteryCharge = [300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300];
+    // Flexible load (capacitatea nodului de a muta consumul) – de exemplu, 50 kW
+    const initialFlexibleLoad = [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50];
+
+    // Valorile de flexibilitate: dacă consumul optim este de 80 kW,
+    // flexibilityBelow = 25 înseamnă că nodul poate reduce consumul până la 55 kW,
+    // iar flexibilityAbove = 70 înseamnă că nodul poate crește consumul până la 150 kW.
+    const flexibilityAbove = [70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70];
+    const flexibilityBelow = [25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25];
 
     const node = await Node.deploy(
-        globalContract.target,  // se folosește .target în loc de .address
+        globalContract.target,  // Folosim .target pentru ethers v6
         initialPosition,
         initialVelocity,
         initialTariff,
@@ -102,7 +117,9 @@ async function main() {
         initialRenewableGeneration,
         initialBatteryCapacity,
         initialBatteryCharge,
-        initialFlexibleLoad
+        initialFlexibleLoad,
+        flexibilityAbove,
+        flexibilityBelow
     );
     await node.waitForDeployment();
     console.log("Deployed Node at:", node.target);

@@ -14,18 +14,20 @@ describe("Synchronization between Node and GlobalContract", function () {
         globalContract = await GlobalContract.deploy();
         await globalContract.waitForDeployment();
 
-        // Deploy Node contract
+        // Deploy Node contract, incluzând valorile de flexibilitate
         Node = await ethers.getContractFactory("Node");
         node = await Node.deploy(
-            globalContract.target, // Se folosește .target în ethers v6
-            [10, 20, 30], // initialPosition
-            [1, 1, 1], // initialVelocity
-            [100, 200, 300], // initialTariff
-            [50, 50, 50], // initialCapacity
-            [10, 15, 20], // initialRenewableGeneration
-            [100, 100, 100], // initialBatteryCapacity
-            [50, 50, 50], // initialBatteryCharge
-            [5, 10, 15] // initialFlexibleLoad
+            globalContract.target,          // adresa GlobalContract
+            [10, 20, 30],                   // initialPosition
+            [1, 1, 1],                      // initialVelocity
+            [100, 200, 300],                // initialTariff
+            [50, 50, 50],                   // initialCapacity
+            [10, 15, 20],                   // initialRenewableGeneration
+            [100, 100, 100],                // initialBatteryCapacity
+            [50, 50, 50],                   // initialBatteryCharge
+            [5, 10, 15],                    // initialFlexibleLoad
+            [20, 20, 20],                   // flexibilityAbove (ex.: nodul poate crește consumul cu 20 unități)
+            [10, 10, 10]                    // flexibilityBelow (ex.: nodul poate reduce consumul cu 10 unități)
         );
         await node.waitForDeployment();
     });
@@ -99,17 +101,19 @@ describe("Synchronization between Node and GlobalContract", function () {
     });
 
     it("should allow multiple nodes to sync their timestamps", async function () {
-        // Deploy al doilea nod
+        // Deploy al doilea nod, incluzând flexibilitatea
         const node2 = await Node.deploy(
-            globalContract.target, // Se folosește .target în ethers v6
-            [5, 10, 15], // initialPosition
-            [2, 2, 2], // initialVelocity
-            [50, 150, 250], // initialTariff
-            [20, 40, 60], // initialCapacity
-            [5, 10, 15], // initialRenewableGeneration
-            [80, 90, 100], // initialBatteryCapacity
-            [30, 40, 50], // initialBatteryCharge
-            [3, 7, 12] // initialFlexibleLoad
+            globalContract.target,          // adresa GlobalContract
+            [5, 10, 15],                    // initialPosition
+            [2, 2, 2],                      // initialVelocity
+            [50, 150, 250],                 // initialTariff
+            [20, 40, 60],                   // initialCapacity
+            [5, 10, 15],                    // initialRenewableGeneration
+            [80, 90, 100],                  // initialBatteryCapacity
+            [30, 40, 50],                   // initialBatteryCharge
+            [3, 7, 12],                     // initialFlexibleLoad
+            [10, 10, 10],                   // flexibilityAbove
+            [5, 5, 5]                      // flexibilityBelow
         );
         await node2.waitForDeployment();
 
