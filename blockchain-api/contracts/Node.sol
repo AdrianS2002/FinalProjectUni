@@ -31,7 +31,7 @@ contract Node {
     int public c2 = 150;
 
     // Date specifice nodului (preluate off-chain, de ex. din CSV)
-    uint[] public tariff; // Tarifele pe oră
+    int[] public tariff; // Tarifele pe oră
     uint[] public capacity; // Capacitatea maximă a rețelei pe oră
     uint[] public renewableGeneration; // Energia regenerabilă disponibilă pe oră
     uint[] public batteryCapacity; // Capacitatea bateriei
@@ -54,7 +54,7 @@ contract Node {
         address globalContractAddress,
         int[] memory initialPosition,
         int[] memory initialVelocity,
-        uint[] memory initialTariff,
+        int[] memory initialTariff,
         uint[] memory initialCapacity,
         uint[] memory initialRenewableGeneration,
         uint[] memory initialBatteryCapacity,
