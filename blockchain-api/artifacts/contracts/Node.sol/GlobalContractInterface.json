@@ -5,12 +5,25 @@
   "abi": [
     {
       "inputs": [],
-      "name": "getGlobalBestPosition",
+      "name": "getGlobalOptimalPlanArray",
       "outputs": [
         {
-          "internalType": "uint256[]",
+          "internalType": "int256[]",
           "name": "",
-          "type": "uint256[]"
+          "type": "int256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getLastUpdatedTimestamp",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -19,17 +32,17 @@
     {
       "inputs": [
         {
-          "internalType": "uint256[]",
+          "internalType": "int256[]",
           "name": "newPosition",
-          "type": "uint256[]"
+          "type": "int256[]"
         },
         {
-          "internalType": "uint256",
+          "internalType": "int256",
           "name": "newScore",
-          "type": "uint256"
+          "type": "int256"
         }
       ],
-      "name": "updateGlobalBestPosition",
+      "name": "updateNodeResult",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
