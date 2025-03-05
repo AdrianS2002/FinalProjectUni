@@ -17,17 +17,17 @@ describe("Synchronization between Node and GlobalContract", function () {
         // Deploy Node contract, incluzând valorile de flexibilitate
         Node = await ethers.getContractFactory("Node");
         node = await Node.deploy(
-            globalContract.target,          // adresa GlobalContract
-            [10, 20, 30],                   // initialPosition
-            [1, 1, 1],                      // initialVelocity
-            [100, 200, 300],                // initialTariff
-            [50, 50, 50],                   // initialCapacity
-            [10, 15, 20],                   // initialRenewableGeneration
-            [100, 100, 100],                // initialBatteryCapacity
-            [50, 50, 50],                   // initialBatteryCharge
-            [5, 10, 15],                    // initialFlexibleLoad
-            [20, 20, 20],                   // flexibilityAbove (ex.: nodul poate crește consumul cu 20 unități)
-            [10, 10, 10]                    // flexibilityBelow (ex.: nodul poate reduce consumul cu 10 unități)
+            globalContract.target,           
+            [10, 20, 30],                    
+            [1, 1, 1],                       
+            [100, 200, 300],                 
+            [50, 50, 50],                   
+            [10, 15, 20],                   
+            [100, 100, 100],                 
+            [50, 50, 50],                    
+            [5, 10, 15],                     
+            [20, 20, 20],                   
+            [10, 10, 10]                    
         );
         await node.waitForDeployment();
     });
@@ -39,7 +39,7 @@ describe("Synchronization between Node and GlobalContract", function () {
 
     it("should update lastUpdatedTimestamp after computing optimal plan", async function () {
         // Nodul trimite un rezultat inițial către GlobalContract
-        await globalContract.connect(addr1).updateNodeResult([10, 20, 30], 100);
+        await globalContract.connect(addr1).updateNodeResult([10, 20, 30], 100,[5, 3, 2]);
 
         // Obținem timestamp-ul înainte de update
         const initialTimestamp = await globalContract.getLastUpdatedTimestamp();
@@ -54,14 +54,15 @@ describe("Synchronization between Node and GlobalContract", function () {
 
     it("should not update node position if global timestamp hasn't changed", async function () {
         // Obținem timestamp-ul global inițial
-        const initialGlobalTimestamp = await globalContract.getLastUpdatedTimestamp();
+         await globalContract.connect(addr1).updateNodeResult([15, 251, 345], 70, [12, 2, 1]);
+    await globalContract.computeGlobalOptimalPlan();
 
-        // Nodul încearcă să își actualizeze poziția fără un update global
-        await expect(node.updateVelocityAndPosition()).to.not.be.reverted;
+    const initialGlobalTimestamp = await globalContract.getLastUpdatedTimestamp();
 
-        // Nodul ar trebui să aibă același timestamp local ca cel global
-        const nodeTimestamp = await node.lastKnownGlobalTimestamp();
-        expect(nodeTimestamp).to.equal(initialGlobalTimestamp);
+    await expect(node.updateVelocityAndPosition()).to.not.be.reverted;
+
+    const nodeTimestamp = await node.lastKnownGlobalTimestamp();
+    expect(nodeTimestamp).to.equal(initialGlobalTimestamp);
     });
 
     it("should update node position when global timestamp changes", async function () {
@@ -69,7 +70,7 @@ describe("Synchronization between Node and GlobalContract", function () {
         const initialGlobalTimestamp = await globalContract.getLastUpdatedTimestamp();
 
         // Actualizăm un nod pentru a permite un nou calcul global
-        await globalContract.connect(addr1).updateNodeResult([15, 25, 35], 90);
+        await globalContract.connect(addr1).updateNodeResult([15, 25, 35], 90,[5, 3, 2]);
         await globalContract.computeGlobalOptimalPlan();
 
         // Obținem timestamp-ul nou din contractul global
@@ -86,7 +87,7 @@ describe("Synchronization between Node and GlobalContract", function () {
 
     it("should sync node timestamp with global timestamp after update", async function () {
         // Actualizăm un nod pentru a permite un nou calcul global
-        await globalContract.connect(addr1).updateNodeResult([15, 25, 35], 90);
+        await globalContract.connect(addr1).updateNodeResult([15, 25, 35], 90,[5, 3, 2]);
         await globalContract.computeGlobalOptimalPlan();
 
         // Obținem timestamp-ul nou din contractul global
@@ -118,7 +119,7 @@ describe("Synchronization between Node and GlobalContract", function () {
         await node2.waitForDeployment();
 
         // Actualizăm un nod și calculăm planul global
-        await globalContract.connect(addr1).updateNodeResult([15, 25, 35], 90);
+        await globalContract.connect(addr1).updateNodeResult([15, 25, 35], 90,[5, 3, 2]);
         await globalContract.computeGlobalOptimalPlan();
 
         // Obținem timestamp-ul nou
