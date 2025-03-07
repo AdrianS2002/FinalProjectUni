@@ -96,7 +96,7 @@ contract Node {
                 int effectiveTariff = getEffectiveTariff(i, consumption);
                 totalCost -= effectiveTariff * (-consumption);
             } else {
-                // Tratarea consumului pozitiv (similar cu implementarea existentă)
+                // Tratarea consumului pozitiv 
                 uint cons = uint(consumption);
                 if (tempRenewable[i] >= cons) {
                     tempRenewable[i] -= cons;
@@ -131,6 +131,9 @@ contract Node {
             weights[i] = (flexibilityAbove[i] + flexibilityBelow[i]) / 2;
         }
         return weights;
+    }
+    function getPosition() public view returns (int[] memory) {
+        return position;
     }
 
     // Adaugă în contractul Node:

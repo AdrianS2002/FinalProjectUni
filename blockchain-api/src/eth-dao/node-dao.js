@@ -1,25 +1,30 @@
+const { ethers } = require("ethers");
 const abi = require('../../artifacts/contracts/Node.sol/Node.json').abi;
 const bin_data = require('../../artifacts/contracts/Node.sol/Node.json').bytecode;
 
 let ErrorHandling = require('../models/error-handling');
 const { getSignerForUser } = require('../utils/commons');
 let EthErrors = require('../models/eth-errors.js');
+const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || "http://127.0.0.1:8545", {
+    name: "localnet",
+    chainId: 1337,
+    ensAddress: null,
+});
 
-// Actualizează viteza și poziția conform metodei PSO din smart contract.
-// Nu se transmit parametri, deoarece funcția updateVelocityAndPosition nu are argumente.
-async function updateVelocityAndPosition(contract_address, ownerAddress) {
+
+// ✅ Actualizează viteza și poziția (doar dacă timestamp-ul global s-a schimbat)
+async function updateVelocityAndPosition(contract_address, ownerAddress, global_contract_address) {
     const signer = await getSignerForUser(ownerAddress);
     const contract = new ethers.Contract(contract_address, abi, signer);
     try {
-        // Obține timestamp-urile pentru sincronizare
-        let { lastKnownGlobalTimestamp } = await getLastKnownGlobalTimestamp(contract_address);
-        let { lastUpdatedTimestamp } = await getLastUpdatedTimestamp(global_contract_address);
+        let lastKnownGlobalTimestamp = await getLastKnownGlobalTimestamp(contract_address);
+        let lastUpdatedTimestamp = await getLastUpdatedTimestamp(global_contract_address);
 
-        // Dacă timestamp-ul global NU s-a schimbat, nu actualizăm viteza și poziția
         if (lastUpdatedTimestamp <= lastKnownGlobalTimestamp) {
             console.log("⚠️ No new update from GlobalContract, skipping updateVelocityAndPosition.");
             return { message: "No update needed", lastKnownGlobalTimestamp, lastUpdatedTimestamp };
         }
+
         let tx = await contract.updateVelocityAndPosition();
         await tx.wait();
         return tx;
@@ -29,57 +34,90 @@ async function updateVelocityAndPosition(contract_address, ownerAddress) {
     }
 }
 
-// Obține poziția curentă din contract (variabila publică position)
 async function getPosition(contract_address) {
     const contract = new ethers.Contract(contract_address, abi, provider);
     try {
-        let result = await contract.position();
+        console.log(`🔍 Verificăm contractul Node la adresa: ${contract_address}`);
+        
+        // Verifică dacă contractul există
+        const code = await provider.getCode(contract_address);
+        if (code === "0x") {
+            throw new Error(`❌ Contractul Node nu este implementat la ${contract_address}`);
+        }
+
+        let result = await contract.getPosition(); // Apelează noua metodă din Solidity
+        console.log("✅ Poziție returnată:", result);
         return { position: result };
     } catch (e) {
-        console.log(e);
+        console.log("❌ Eroare în getPosition:", e);
         return new EthErrors.MethodCallError("Node", "getPosition", "position");
     }
 }
 
-// Obține timestamp-ul global cunoscut de nod (lastKnownGlobalTimestamp)
+
+
+
+async function getObjectiveFunctionResult(contract_address, position) {
+    const contract = new ethers.Contract(contract_address, abi, provider);
+    try {
+        let result = await contract.objectiveFunction(position); // ⚠️ Asigură-te că position e corect
+        return result;
+    } catch (e) {
+        console.log(e);
+        return new EthErrors.MethodCallError("Node", "getObjectiveFunctionResult", "objectiveFunction");
+    }
+}
+
+
+// ✅ Obține timestamp-ul global cunoscut de nod
 async function getLastKnownGlobalTimestamp(contract_address) {
     const contract = new ethers.Contract(contract_address, abi, provider);
     try {
         let result = await contract.lastKnownGlobalTimestamp();
-        return { lastKnownGlobalTimestamp: result };
+        return result; // ✅ NU `{ lastKnownGlobalTimestamp: result }`
     } catch (e) {
         console.log(e);
         return new EthErrors.MethodCallError("Node", "getLastKnownGlobalTimestamp", "lastKnownGlobalTimestamp");
     }
 }
 
+// ✅ Obține timestamp-ul global actualizat
+async function getLastUpdatedTimestamp(contract_address) {
+    const contract = new ethers.Contract(contract_address, abi, provider);
+    try {
+        let result = await contract.getLastUpdatedTimestamp();
+        return result; // ✅ NU `{ lastUpdatedTimestamp: result }`
+    } catch (e) {
+        console.log(e);
+        return new EthErrors.MethodCallError("GlobalContract", "getLastUpdatedTimestamp", "getLastUpdatedTimestamp");
+    }
+}
 
-// Obține scorul cel mai bun personal (personalBestScore)
+// ✅ Obține scorul cel mai bun personal
 async function getPersonalBestScore(contract_address) {
     const contract = new ethers.Contract(contract_address, abi, provider);
     try {
         let result = await contract.personalBestScore();
-        return { personalBestScore: result };
+        return result;
     } catch (e) {
         console.log(e);
         return new EthErrors.MethodCallError("Node", "getPersonalBestScore", "personalBestScore");
     }
 }
 
-// Obține poziția cel mai bună personală (personalBestPosition)
+// ✅ Obține poziția cea mai bună personală
 async function getPersonalBestPosition(contract_address) {
     const contract = new ethers.Contract(contract_address, abi, provider);
     try {
         let result = await contract.personalBestPosition();
-        return { personalBestPosition: result };
+        return result;
     } catch (e) {
         console.log(e);
         return new EthErrors.MethodCallError("Node", "getPersonalBestPosition", "personalBestPosition");
     }
 }
 
-// Nodul își actualizează poziția optimă (cea mai bună soluție personală)
-// și transmite rezultatul către contractul global.
+// ✅ Actualizează cea mai bună poziție și trimite la Global Contract
 async function updateBestPositions(contract_address, ownerAddress) {
     const signer = await getSignerForUser(ownerAddress);
     const contract = new ethers.Contract(contract_address, abi, signer);
@@ -98,5 +136,8 @@ module.exports = {
     getPosition,
     getPersonalBestScore,
     getPersonalBestPosition,
-    updateBestPositions
+    updateBestPositions,
+    getLastKnownGlobalTimestamp,
+    getLastUpdatedTimestamp,
+    getObjectiveFunctionResult
 };

@@ -1,96 +1,123 @@
-const { ethers } = require('ethers');
-const abi = require('../../artifacts/contracts/Node.sol/Node.json').abi;
-const bin_data = require('../../artifacts/contracts/Node.sol/Node.json').bytecode;
+let enums = require('../models/enums');
+let nodeDAO = require('../eth-dao/node-dao');
+let accountDao = require('../db-dao/accounts-dao.js');
+let contractDao = require('../db-dao/contracts-dao.js');
+const globalContractService = require('./global-bll');
 
-let ErrorHandling = require('../models/error-handling');
-const { getSignerForUser } = require('../utils/commons');
-let EthErrors = require('../models/eth-errors.js');
+//Funcție auxiliară pentru a obține contractul Node asociat unui utilizator
+async function getNodeContractForUser(username) {
+    let account = await accountDao.QueryAccountAddressByUsername(username);
+    if (!account || !account.address) {
+        throw new Error(`⚠️ No account found for username: ${username}`);
+    }
 
-// Funcție pentru a actualiza viteza și poziția (metodă write)
-async function updateVelocityAndPosition(contract_address, ownerAddress, global_contract_address, provider) {
-    const signer = await getSignerForUser(ownerAddress);
-    const contract = new ethers.Contract(contract_address, abi, signer);
+    let contract = await contractDao.QueryContractByTypeAndOwner(enums.ContractType.NODE, account.address);
+    if (!contract || !contract.address) {
+        throw new Error(`⚠️ No Node contract found for user: ${username}`);
+    }
+
+    console.log("✅ Found Node Contract:", contract.address);
+    return { contractAddress: contract.address, ownerAddress: account.address };
+}
+
+
+//Actualizează viteza și poziția pentru un nod (doar dacă timestamp-ul global s-a schimbat)
+async function updateVelocityAndPosition(username, global_contract_address) {
     try {
-        // Obținem timestamp-ul local din contractul Node
-        let { lastKnownGlobalTimestamp } = await getLastKnownGlobalTimestamp(contract_address, provider);
-        // Obținem timestamp-ul global din GlobalContract
-        const globalContractService = require('./globalContractService');
-        let { lastUpdatedTimestamp } = await globalContractService.getLastUpdatedTimestamp(global_contract_address, provider);
+        let { contractAddress, ownerAddress } = await getNodeContractForUser(username);
         
-        // Dacă nu există update nou, se revine fără tranzacție
+        // Obținem timestamp-urile pentru sincronizare
+        let lastKnownGlobalTimestamp = await nodeDAO.getLastKnownGlobalTimestamp(contractAddress);
+        let lastUpdatedTimestamp = await globalContractService.getLastUpdatedTimestamp(global_contract_address);
+
         if (lastUpdatedTimestamp <= lastKnownGlobalTimestamp) {
-            console.log("⚠️ No new update from GlobalContract, skipping updateVelocityAndPosition.");
+            console.log(`⚠️ No new update for ${username}, skipping updateVelocityAndPosition.`);
             return { message: "No update needed", lastKnownGlobalTimestamp, lastUpdatedTimestamp };
         }
-        
-        let tx = await contract.updateVelocityAndPosition();
-        await tx.wait();
-        return tx;
+
+        let tx = await nodeDAO.updateVelocityAndPosition(contractAddress, ownerAddress);
+        return Promise.resolve({ transaction: tx });
     } catch (e) {
-        console.log(e);
-        return new EthErrors.MethodCallError("Node", "updateVelocityAndPosition", "updateVelocityAndPosition");
+        return Promise.reject(e);
     }
 }
 
-// Funcție pentru a obține poziția curentă a nodului (read)
-async function getPosition(contract_address, provider) {
-    const contract = new ethers.Contract(contract_address, abi, provider);
+// Obține poziția curentă a unui nod
+async function getPosition(username) {
     try {
-        let result = await contract.position();
-        return { position: result };
+        let { contractAddress } = await getNodeContractForUser(username);
+        let positionData = await nodeDAO.getPosition(contractAddress);
+        console.log("Fetched position from DAO:", positionData); // Debugging
+
+        return positionData; // Acesta trebuie să fie { position: [10, 20, 30] }
     } catch (e) {
-        console.log(e);
-        return new EthErrors.MethodCallError("Node", "getPosition", "position");
+        return Promise.reject(e);
     }
 }
 
-// Funcție pentru a obține timestamp-ul cunoscut de nod (lastKnownGlobalTimestamp) (read)
-async function getLastKnownGlobalTimestamp(contract_address, provider) {
-    const contract = new ethers.Contract(contract_address, abi, provider);
+
+// Obține timestamp-ul global cunoscut de nod
+async function getLastKnownGlobalTimestamp(username) {
     try {
-        let result = await contract.lastKnownGlobalTimestamp();
-        return { lastKnownGlobalTimestamp: result };
+        let { contractAddress } = await getNodeContractForUser(username);
+        let timestamp = await nodeDAO.getLastKnownGlobalTimestamp(contractAddress);
+        return Promise.resolve({ timestamp });
     } catch (e) {
-        console.log(e);
-        return new EthErrors.MethodCallError("Node", "getLastKnownGlobalTimestamp", "lastKnownGlobalTimestamp");
+        return Promise.reject(e);
     }
 }
 
-// Funcție pentru a obține cel mai bun scor personal (read)
-async function getPersonalBestScore(contract_address, provider) {
-    const contract = new ethers.Contract(contract_address, abi, provider);
+// Obține cel mai bun scor personal al unui nod
+async function getPersonalBestScore(username) {
     try {
-        let result = await contract.personalBestScore();
-        return { personalBestScore: result };
+        let { contractAddress } = await getNodeContractForUser(username);
+        let score = await nodeDAO.getPersonalBestScore(contractAddress);
+        return Promise.resolve({ score });
     } catch (e) {
-        console.log(e);
-        return new EthErrors.MethodCallError("Node", "getPersonalBestScore", "personalBestScore");
+        return Promise.reject(e);
     }
 }
 
-// Funcție pentru a obține cea mai bună poziție personală (read)
-async function getPersonalBestPosition(contract_address, provider) {
-    const contract = new ethers.Contract(contract_address, abi, provider);
+// Obține cea mai bună poziție personală a unui nod
+async function getPersonalBestPosition(username) {
     try {
-        let result = await contract.personalBestPosition();
-        return { personalBestPosition: result };
+        let { contractAddress } = await getNodeContractForUser(username);
+        let position = await nodeDAO.getPersonalBestPosition(contractAddress);
+        return Promise.resolve({ position });
     } catch (e) {
-        console.log(e);
-        return new EthErrors.MethodCallError("Node", "getPersonalBestPosition", "personalBestPosition");
+        return Promise.reject(e);
     }
 }
 
-// Funcție pentru ca nodul să își actualizeze poziția optimă și să transmită rezultatul către GlobalContract (write)
-async function updateBestPositions(contract_address, ownerAddress) {
-    const signer = await getSignerForUser(ownerAddress);
-    const contract = new ethers.Contract(contract_address, abi, signer);
+// Actualizează cea mai bună poziție a unui nod și o trimite la Global Contract
+async function updateBestPositions(username) {
     try {
-        let tx = await contract.updateBestPositions();
-        await tx.wait();
-        return tx;
+        let { contractAddress, ownerAddress } = await getNodeContractForUser(username);
+        let tx = await nodeDAO.updateBestPositions(contractAddress, ownerAddress);
+        return Promise.resolve({ transaction: tx });
     } catch (e) {
-        console.log(e);
-        return new EthErrors.MethodCallError("Node", "updateBestPositions", "updateBestPositions");
+        return Promise.reject(e);
+    }
+}
+
+//  Obține rezultatul funcției obiectiv pentru un nod
+async function getObjectiveFunctionResult(username) {
+    try {
+        let { contractAddress } = await getNodeContractForUser(username);
+        let result = await nodeDAO.getObjectiveFunctionResult(contractAddress);
+        return Promise.resolve({ result });
+    } catch (e) {
+        return Promise.reject(e);
+    }
+}
+
+
+async function getNodePenalty(username) {
+    try {
+        let penaltyData = await calculateNodePenalty(username);
+        return Promise.resolve(penaltyData);
+    } catch (e) {
+        return Promise.reject(e);
     }
 }
 
@@ -100,5 +127,7 @@ module.exports = {
     getLastKnownGlobalTimestamp,
     getPersonalBestScore,
     getPersonalBestPosition,
-    updateBestPositions
+    updateBestPositions,
+    getObjectiveFunctionResult,
+    getNodePenalty
 };

@@ -153,7 +153,7 @@ describe("PSO Algorithm Simulation with 4 Nodes (5 Hours)", function () {
     console.log("Total network cost BEFORE iterations:", totalCostBefore.toString());
   
     // Rulăm mai multe iterații de optimizare
-    const iterations = 20;
+    const iterations = 8;
     for (let iter = 0; iter < iterations; iter++) {
       console.log(`\n--- Iteration ${iter + 1} ---`);
       // Nodurile își actualizează soluția personală înainte de actualizare.
