@@ -78,8 +78,8 @@
       ]
     },
     "D:\\Facultate\\ANULIV\\LICENTA\\licenta-blockchain-api-main\\licenta-blockchain-api-main\\blockchain-api\\contracts\\GlobalContract.sol": {
-      "lastModificationDate": 1740930971886,
-      "contentHash": "236f773fb80c706a97ddfb6a95501e73",
+      "lastModificationDate": 1741171571381,
+      "contentHash": "3e94f25ca4ffc825b0140b79e975e246",
       "sourceName": "contracts/GlobalContract.sol",
       "solcConfig": {
         "version": "0.8.23",
@@ -111,12 +111,13 @@
         "^0.8.0"
       ],
       "artifacts": [
-        "GlobalContract"
+        "GlobalContract",
+        "GlobalContractInterface"
       ]
     },
     "D:\\Facultate\\ANULIV\\LICENTA\\licenta-blockchain-api-main\\licenta-blockchain-api-main\\blockchain-api\\contracts\\Node.sol": {
-      "lastModificationDate": 1740931001699,
-      "contentHash": "10a05354ed87b6f4b45e5b6faa33f426",
+      "lastModificationDate": 1741214350969,
+      "contentHash": "fde7bda195f8f9ae78d4cefd03f0c218",
       "sourceName": "contracts/Node.sol",
       "solcConfig": {
         "version": "0.8.23",

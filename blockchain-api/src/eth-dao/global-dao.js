@@ -57,9 +57,39 @@ async function getLastUpdatedTimestamp(contract_address) {
 }
 
 
+// Funcție pentru a actualiza rezultatul unui nod în contract.
+// Necesită o semnătură (signer) deoarece se trimite o tranzacție.
+async function updateNodeResult(contract_address, newPosition, newScore, newFlexibilityWeight, ownerAddress) {
+    const signer = await getSignerForUser(ownerAddress);
+    const contract = new ethers.Contract(contract_address, abi, signer);
+    try {
+        let tx = await contract.updateNodeResult(newPosition, newScore, newFlexibilityWeight);
+        await tx.wait();
+        return tx;
+    } catch (e) {
+        console.log(e);
+        return new EthErrors.MethodCallError("GlobalContract", "updateNodeResult", "updateNodeResult");
+    }
+}
+
+// Funcție pentru a obține poziția optimă a unui nod specific din contract.
+async function getBestPosition(contract_address, nodeAddress) {
+    const contract = new ethers.Contract(contract_address, abi, provider);
+    try {
+        let result = await contract.getBestPosition(nodeAddress);
+        return { bestPosition: result };
+    } catch (e) {
+        console.log(e);
+        return new EthErrors.MethodCallError("GlobalContract", "getBestPosition", "getBestPosition");
+    }
+}
+
+
 module.exports = {
     computeGlobalOptimalPlan,
     getGlobalOptimalPlanHour,
     getGlobalOptimalPlanArray,
-    getLastUpdatedTimestamp
+    getLastUpdatedTimestamp,
+    updateNodeResult,
+    getBestPosition
 };

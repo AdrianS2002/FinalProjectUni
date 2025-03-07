@@ -15,7 +15,6 @@ describe("PSO Algorithm Simulation with 4 Nodes (5 Hours)", function () {
     await globalContract.waitForDeployment();
     console.log("GlobalContract deployed at:", globalContract.target);
 
-   
     const nodeParams = [
       {
         initialPosition: [40, 20, 10, 890, 30],
@@ -66,7 +65,7 @@ describe("PSO Algorithm Simulation with 4 Nodes (5 Hours)", function () {
         flexibilityBelow: [25, 25, 25, 25, 25]
       }
     ];
-
+    
     // Deploy 4 noduri folosind valorile definite
     Node = await ethers.getContractFactory("Node");
     nodes = [];
@@ -91,9 +90,31 @@ describe("PSO Algorithm Simulation with 4 Nodes (5 Hours)", function () {
     }
   });
 
-  it("Simulates PSO algorithm: nodes send best positions, compute global plan, and update positions/velocities", async function () {
+
+
+  it("Simulates PSO algorithm: nodes send best positions, compute global plan, update positions/velocities, and show total cost per iteration", async function () {
+    // Helper: reconstruiește vectorul de poziții pentru un nod (presupunem 5 ore)
+    async function getPositionArray(node) {
+      let posArray = [];
+      for (let j = 0; j < 5; j++) {
+        posArray.push((await node.position(j)).toString());
+      }
+      return posArray;
+    }
+  
+    // Helper: calculează costul total al rețelei (suma costurilor tuturor nodurilor)
+    async function getTotalNetworkCost() {
+      let totalCost = BigInt(0);
+      for (let i = 0; i < nodes.length; i++) {
+        const pos = await getPositionArray(nodes[i]);
+        const cost = await nodes[i].objectiveFunction(pos);
+        totalCost += BigInt(cost.toString());
+      }
+      return totalCost;
+    }
+  
     console.log("\n=== Initial Node Positions ===");
-    // Pentru fiecare nod, afișăm poziția inițială (pe 5 ore)
+    // Pentru fiecare nod, afișează poziția inițială (pe 5 ore)
     for (let i = 0; i < nodes.length; i++) {
       let posArray = [];
       for (let j = 0; j < 5; j++) {
@@ -101,37 +122,88 @@ describe("PSO Algorithm Simulation with 4 Nodes (5 Hours)", function () {
         posArray.push(pos.toString());
       }
       console.log(`Node ${i + 1} initial position:`, posArray);
-      // Nodul își transmite rezultatul curent către GlobalContract.
+      // Nodul își transmite soluția curentă către GlobalContract.
       await nodes[i].updateBestPositions();
     }
-
-    // Calculăm planul global optim în GlobalContract.
+  
+    // Afișează tariful efectiv pentru fiecare nod înainte de optimizare.
+    console.log("\n=== Effective Tariffs BEFORE Optimization ===");
+    for (let i = 0; i < nodes.length; i++) {
+      let tariffsBefore = [];
+      for (let j = 0; j < 5; j++) {
+        const consumption = await nodes[i].position(j);
+        const effectiveTariff = await nodes[i].getEffectiveTariff(j, consumption);
+        tariffsBefore.push(effectiveTariff.toString());
+      }
+      console.log(`Node ${i + 1} effective tariffs before:`, tariffsBefore);
+    }
+  
+    // Calculăm planul global optim inițial în GlobalContract.
     await globalContract.computeGlobalOptimalPlan();
     let globalPlan = [];
     for (let j = 0; j < 5; j++) {
       const gp = await globalContract.getGlobalOptimalPlanHour(j);
       globalPlan.push(gp.toString());
     }
-    console.log("\n=== Global Optimal Plan (per hour) ===");
+    console.log("\n=== Global Optimal Plan (initially) ===");
     console.log(globalPlan);
-
-    // Fiecare nod își actualizează viteza și poziția folosind planul global.
-    console.log("\n=== Updating Node Velocities and Positions ===");
-    for (let i = 0; i < nodes.length; i++) {
-      await nodes[i].updateVelocityAndPosition();
-      let newPosArray = [];
-      let newVelArray = [];
-      for (let j = 0; j < 5; j++) {
-        const pos = await nodes[i].position(j);
-        const vel = await nodes[i].velocity(j);
-        newPosArray.push(pos.toString());
-        newVelArray.push(vel.toString());
+  
+    // Afișăm costul total inițial.
+    let totalCostBefore = await getTotalNetworkCost();
+    console.log("Total network cost BEFORE iterations:", totalCostBefore.toString());
+  
+    // Rulăm mai multe iterații de optimizare
+    const iterations = 8;
+    for (let iter = 0; iter < iterations; iter++) {
+      console.log(`\n--- Iteration ${iter + 1} ---`);
+      // Nodurile își actualizează soluția personală înainte de actualizare.
+      for (let i = 0; i < nodes.length; i++) {
+        await nodes[i].updateBestPositions();
       }
-      console.log(`Node ${i + 1} updated position:`, newPosArray);
-      console.log(`Node ${i + 1} updated velocity:`, newVelArray);
+      // Actualizăm planul global la fiecare iterație.
+      await globalContract.computeGlobalOptimalPlan();
+      // Afișăm noul plan global.
+      let currentGlobalPlan = [];
+      for (let j = 0; j < 5; j++) {
+        const gp = await globalContract.getGlobalOptimalPlanHour(j);
+        currentGlobalPlan.push(gp.toString());
+      }
+      console.log(`Iteration ${iter + 1} - Global Optimal Plan:`, currentGlobalPlan);
+      // Nodurile își actualizează viteza și poziția.
+      for (let i = 0; i < nodes.length; i++) {
+        await nodes[i].updateVelocityAndPosition();
+      }
+      // Actualizează din nou soluția personală pentru a reflecta noile poziții.
+      for (let i = 0; i < nodes.length; i++) {
+        await nodes[i].updateBestPositions();
+      }
+      // Afișăm pozițiile după această iterație.
+      for (let i = 0; i < nodes.length; i++) {
+        let posArray = [];
+        for (let j = 0; j < 5; j++) {
+          const pos = await nodes[i].position(j);
+          posArray.push(pos.toString());
+        }
+        console.log(`Iteration ${iter + 1} - Node ${i + 1} position:`, posArray);
+      }
+      // Calculăm și afișăm costul total al rețelei după această iterație.
+      let currentTotalCost = await getTotalNetworkCost();
+      console.log(`Iteration ${iter + 1} - Total network cost:`, currentTotalCost.toString());
     }
     
-    // La final, afișăm pozițiile finale ale nodurilor:
+    // Afișăm tariful efectiv pentru fiecare nod după optimizare.
+    console.log("\n=== Effective Tariffs AFTER Optimization ===");
+    for (let i = 0; i < nodes.length; i++) {
+      let tariffsAfter = [];
+      for (let j = 0; j < 5; j++) {
+        const consumption = await nodes[i].position(j);
+        const effectiveTariff = await nodes[i].getEffectiveTariff(j, consumption);
+        tariffsAfter.push(effectiveTariff.toString());
+      }
+      console.log(`Node ${i + 1} effective tariffs after:`, tariffsAfter);
+    }
+    
+    // La final, afișăm pozițiile finale ale nodurilor.
     console.log("\n=== Final Node Positions ===");
     for (let i = 0; i < nodes.length; i++) {
       let finalPos = [];
@@ -142,4 +214,70 @@ describe("PSO Algorithm Simulation with 4 Nodes (5 Hours)", function () {
       console.log(`Node ${i + 1} final position:`, finalPos);
     }
   });
+  
+  
+  
+
+
+  // it("should reduce total network cost and update positions after multiple iterations", async function () {
+  //   // Helper: reconstruiește vectorul de poziții pentru un nod (presupunem 5 ore)
+  //   async function getPositionArray(node) {
+  //     let posArray = [];
+  //     for (let j = 0; j < 5; j++) {
+  //       posArray.push((await node.position(j)).toString());
+  //     }
+  //     return posArray;
+  //   }
+  
+  //   // Stocăm pozițiile inițiale și costul total inițial
+  //   let initialPositions = [];
+  //   let totalCostBefore = BigInt(0);
+  //   for (let i = 0; i < nodes.length; i++) {
+  //     const pos = await getPositionArray(nodes[i]);
+  //     initialPositions.push(pos);
+  //     const cost = await nodes[i].objectiveFunction(pos);
+  //     totalCostBefore += BigInt(cost.toString());
+  //   }
+  //   console.log("Total cost BEFORE iterations:", totalCostBefore.toString());
+  //   console.log("Initial positions:", initialPositions);
+  
+  //   // Rulăm mai multe iterații de optimizare
+  //   const iterations = 20;
+  //   for (let iter = 0; iter < iterations; iter++) {
+  //     // Fiecare nod își actualizează cea mai bună soluție înainte de a actualiza viteza
+  //     for (let i = 0; i < nodes.length; i++) {
+  //       await nodes[i].updateBestPositions();
+  //     }
+  //     // Apoi se actualizează viteza și poziția
+  //     for (let i = 0; i < nodes.length; i++) {
+  //       await nodes[i].updateVelocityAndPosition();
+  //     }
+  //     // După actualizare, nodurile își recalculează soluția personală pe baza noilor poziții
+  //     for (let i = 0; i < nodes.length; i++) {
+  //       await nodes[i].updateBestPositions();
+  //     }
+  //   }
+  
+  //   // Stocăm pozițiile finale și costul total după iterații
+  //   let finalPositions = [];
+  //   let totalCostAfter = BigInt(0);
+  //   for (let i = 0; i < nodes.length; i++) {
+  //     const pos = await getPositionArray(nodes[i]);
+  //     finalPositions.push(pos);
+  //     const cost = await nodes[i].objectiveFunction(pos);
+  //     totalCostAfter += BigInt(cost.toString());
+  //   }
+  //   console.log("Total cost AFTER iterations:", totalCostAfter.toString());
+  //   console.log("Final positions:", finalPositions);
+  
+  //   // Verificăm că costul total a scăzut
+  //   expect(totalCostAfter).to.be.below(totalCostBefore);
+  
+  //   // Verificăm că cel puțin o poziție s-a modificat pentru fiecare nod
+  //   for (let i = 0; i < nodes.length; i++) {
+  //     expect(finalPositions[i]).to.not.deep.equal(initialPositions[i]);
+  //   }
+  // });
+
+  
 });

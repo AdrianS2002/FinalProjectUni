@@ -1,58 +1,82 @@
-const { ethers } = require('ethers');
-const abi = require('../../artifacts/contracts/GlobalContract.sol/GlobalContract.json').abi;
-const bin_data = require('../../artifacts/contracts/GlobalContract.sol/GlobalContract.json').bytecode;
+let enums = require('../models/enums');
+let globalDAO = require('../eth-dao/global-dao');
+let accountDao = require('../db-dao/accounts-dao.js');
+let contractDao = require('../db-dao/contracts-dao.js');
 
-let ErrorHandling = require('../models/error-handling');
-const { getSignerForUser } = require('../utils/commons');
-let EthErrors = require('../models/eth-errors.js');
+// 📌 Funcție auxiliară pentru a obține contractul Global asociat unui utilizator
+async function getGlobalContractForUser(username) {
+    let account = await accountDao.QueryAccountAddressByUsername(username);
+    let contract = await contractDao.QueryContractByTypeAndOwner(enums.ContractType.GLOBAL, account.address);
 
-// Funcție pentru a calcula planul global optim (tranzacție, necesită signer)
-async function computeGlobalOptimalPlan(contract_address, ownerAddress) {
-    const signer = await getSignerForUser(ownerAddress);
-    const contract = new ethers.Contract(contract_address, abi, signer);
+    if (!contract) {
+        throw new Error(`No Global contract found for user: ${username}`);
+    }
+    return { contractAddress: contract.address, ownerAddress: account.address };
+}
+
+// 🔹 Calculează planul global optim
+async function computeGlobalOptimalPlan(username) {
     try {
-        let tx = await contract.computeGlobalOptimalPlan();
-        await tx.wait();
-        return tx;
+        let { contractAddress, ownerAddress } = await getGlobalContractForUser(username);
+        let tx = await globalDAO.computeGlobalOptimalPlan(contractAddress, ownerAddress);
+        return Promise.resolve({ transaction: tx });
     } catch (e) {
-        console.log(e);
-        return new EthErrors.MethodCallError("GlobalContract", "computeGlobalOptimalPlan", "computeGlobalOptimalPlan");
+        return Promise.reject(e);
     }
 }
 
-// Funcție pentru a obține valoarea planului global pentru o anumită oră (read)
-async function getGlobalOptimalPlanHour(contract_address, hour, provider) {
-    const contract = new ethers.Contract(contract_address, abi, provider);
+// 🔹 Obține valoarea planului global pentru o anumită oră
+async function getGlobalOptimalPlanHour(username, hour) {
     try {
-        let result = await contract.getGlobalOptimalPlanHour(hour);
-        return { globalOptimalPlanHour: result };
+        let { contractAddress } = await getGlobalContractForUser(username);
+        let result = await globalDAO.getGlobalOptimalPlanHour(contractAddress, hour);
+        return Promise.resolve(result);
     } catch (e) {
-        console.log(e);
-        return new EthErrors.MethodCallError("GlobalContract", "getGlobalOptimalPlanHour", "getGlobalOptimalPlanHour");
+        return Promise.reject(e);
     }
 }
 
-// Funcție pentru a obține planul global complet sub formă de array (read)
-async function getGlobalOptimalPlanArray(contract_address, provider) {
-    const contract = new ethers.Contract(contract_address, abi, provider);
+// 🔹 Obține întregul plan global optim
+async function getGlobalOptimalPlanArray(username) {
     try {
-        let result = await contract.getGlobalOptimalPlanArray();
-        return { globalOptimalPlanArray: result };
+        let { contractAddress } = await getGlobalContractForUser(username);
+        let result = await globalDAO.getGlobalOptimalPlanArray(contractAddress);
+        return Promise.resolve(result);
     } catch (e) {
-        console.log(e);
-        return new EthErrors.MethodCallError("GlobalContract", "getGlobalOptimalPlanArray", "getGlobalOptimalPlanArray");
+        return Promise.reject(e);
     }
 }
 
-// Funcție pentru a obține timestamp-ul ultimei actualizări din GlobalContract (read)
-async function getLastUpdatedTimestamp(contract_address, provider) {
-    const contract = new ethers.Contract(contract_address, abi, provider);
+// 🔹 Obține timestamp-ul global actualizat
+async function getLastUpdatedTimestamp(username) {
     try {
-        let result = await contract.getLastUpdatedTimestamp();
-        return { lastUpdatedTimestamp: result };
+        let { contractAddress } = await getGlobalContractForUser(username);
+        let result = await globalDAO.getLastUpdatedTimestamp(contractAddress);
+        return Promise.resolve(result);
     } catch (e) {
-        console.log(e);
-        return new EthErrors.MethodCallError("GlobalContract", "getLastUpdatedTimestamp", "getLastUpdatedTimestamp");
+        return Promise.reject(e);
+    }
+}
+
+// 🔹 Actualizează rezultatul unui nod în GlobalContract
+async function updateNodeResult(username, newPosition, newScore, newFlexibilityWeight) {
+    try {
+        let { contractAddress, ownerAddress } = await getGlobalContractForUser(username);
+        let tx = await globalDAO.updateNodeResult(contractAddress, newPosition, newScore, newFlexibilityWeight, ownerAddress);
+        return Promise.resolve({ transaction: tx });
+    } catch (e) {
+        return Promise.reject(e);
+    }
+}
+
+// 🔹 Obține cea mai bună poziție pentru un nod
+async function getBestPosition(username, nodeAddress) {
+    try {
+        let { contractAddress } = await getGlobalContractForUser(username);
+        let result = await globalDAO.getBestPosition(contractAddress, nodeAddress);
+        return Promise.resolve(result);
+    } catch (e) {
+        return Promise.reject(e);
     }
 }
 
@@ -60,5 +84,7 @@ module.exports = {
     computeGlobalOptimalPlan,
     getGlobalOptimalPlanHour,
     getGlobalOptimalPlanArray,
-    getLastUpdatedTimestamp
+    getLastUpdatedTimestamp,
+    updateNodeResult,
+    getBestPosition
 };

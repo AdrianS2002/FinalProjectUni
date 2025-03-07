@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "GlobalContractInterface",
-  "sourceName": "contracts/Node.sol",
+  "sourceName": "contracts/GlobalContract.sol",
   "abi": [
     {
       "inputs": [],

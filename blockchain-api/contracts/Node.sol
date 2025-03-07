@@ -5,7 +5,8 @@ pragma solidity ^0.8.0;
 interface GlobalContractInterface {
     function updateNodeResult(
         int[] calldata newPosition,
-        int newScore
+        int newScore,
+        uint[] calldata newFlexibilityWeight
     ) external;
     function getGlobalOptimalPlanArray() external view returns (int[] memory);
     function getLastUpdatedTimestamp() external view returns (uint);
@@ -27,8 +28,8 @@ contract Node {
 
     // Parametrii PSO: w – inerție, c1 și c2 – coeficienți pentru componentele cognitivă și socială.
     int public w = 50;
-    int public c1 = 150;
-    int public c2 = 150;
+    int public c1 = 200;
+    int public c2 = 200;
 
     // Date specifice nodului (preluate off-chain, de ex. din CSV)
     int[] public tariff; // Tarifele pe oră
@@ -92,9 +93,10 @@ contract Node {
             if (consumption < 0) {
                 // Exemplu: reward = - (consumption in absolute value * un factor)
                 // Astfel, costul devine negativ, indicând un beneficiu.
-                totalCost -= int(tariff[i]) * (-consumption);
+                int effectiveTariff = getEffectiveTariff(i, consumption);
+                totalCost -= effectiveTariff * (-consumption);
             } else {
-                // Tratarea consumului pozitiv (similar cu implementarea existentă)
+                // Tratarea consumului pozitiv 
                 uint cons = uint(consumption);
                 if (tempRenewable[i] >= cons) {
                     tempRenewable[i] -= cons;
@@ -112,8 +114,48 @@ contract Node {
                 }
                 totalCost += int(tariff[i]) * int(cons);
             }
-        } 
+        }
         return totalCost;
+    }
+
+    // Calculează flexibilitatea (pondera de ajustare) pentru fiecare oră.
+    // Exemplu: weight = (flexibilityAbove + flexibilityBelow) / 2.
+    function calculateFlexibilityWeight()
+        internal
+        view
+        returns (uint[] memory)
+    {
+        uint len = flexibilityAbove.length;
+        uint[] memory weights = new uint[](len);
+        for (uint i = 0; i < len; i++) {
+            weights[i] = (flexibilityAbove[i] + flexibilityBelow[i]) / 2;
+        }
+        return weights;
+    }
+    function getPosition() public view returns (int[] memory) {
+        return position;
+    }
+
+    // Adaugă în contractul Node:
+    function getEffectiveTariff(
+        uint hour,
+        int consumption
+    ) public view returns (int) {
+        int base = int(tariff[hour]);
+        if (consumption < 0) {
+            uint absConsumption = uint(-consumption);
+            // Discount de bază: 20%
+            // Discount suplimentar: 0.5% per unitate injectată
+            uint extraDiscount = absConsumption / 2; // (0.5% * absConsumption)
+            uint totalDiscount = 20 + extraDiscount;
+            // Limita maximă a discountului este de 40%
+            if (totalDiscount > 40) {
+                totalDiscount = 40;
+            }
+            return (base * int(100 - totalDiscount)) / 100;
+        } else {
+            return base;
+        }
     }
 
     // Nodul își actualizează cea mai bună soluție personală și transmite rezultatul către GlobalContract.
@@ -126,7 +168,8 @@ contract Node {
             personalBestPosition = position;
             emit BestPositionUpdated(address(this), currentScore);
         }
-        globalContract.updateNodeResult(position, currentScore);
+        uint[] memory flexWeights = calculateFlexibilityWeight();
+        globalContract.updateNodeResult(position, currentScore, flexWeights);
     }
 
     // Actualizează viteza și poziția folosind planul global și algoritmul PSO.
@@ -137,10 +180,7 @@ contract Node {
         if (globalTimestamp > lastKnownGlobalTimestamp) {
             lastKnownGlobalTimestamp = globalTimestamp;
             emit NewPlanReceived(globalTimestamp);
-        } else {
-            return;
         }
-
         int[] memory globalPlan = globalContract.getGlobalOptimalPlanArray();
         require(globalPlan.length == position.length, "Dimensiuni inegale");
 
@@ -174,9 +214,12 @@ contract Node {
 
             // Aplicăm limitele de flexibilitate:
             // Se presupune că personalBestPosition reprezintă consumul de referință.
-            int referenceConsumption = personalBestPosition[i];
-            int minAllowed = referenceConsumption - int(flexibilityBelow[i]);
-            int maxAllowed = referenceConsumption + int(flexibilityAbove[i]);
+            int minAllowed = personalBestPosition[i] -
+                int(flexibilityBelow[i]) *
+                2;
+            int maxAllowed = personalBestPosition[i] +
+                int(flexibilityAbove[i]) *
+                2;
 
             if (position[i] < minAllowed) {
                 position[i] = minAllowed;

@@ -14,7 +14,7 @@ describe("Node Contract", function () {
 
     // Pentru sincronizare, transmitem o soluție inițială de la un nod în GlobalContract
     // (Aceasta nu este strict necesară pentru testele Node, dar ajută la popularea mapping-ului din GlobalContract)
-    await globalContract.connect(accounts[0]).updateNodeResult([10, 20, 30], 100);
+    await globalContract.connect(accounts[0]).updateNodeResult([10, 20, 30], 100,[5, 3, 2]);
 
     // Deploy Node cu cei 9 parametri necesari
     Node = await ethers.getContractFactory("Node");
@@ -101,7 +101,7 @@ describe("Node Contract", function () {
     console.log("🚀 Initial Position:", initPos);
     console.log("🚀 Initial Velocity:", initVel);
     // 📌 ACTUALIZĂM GLOBAL PLAN CU VALORI NOI
-    await globalContract.connect(accounts[0]).updateNodeResult([5, 15, 25], 50);
+    await globalContract.connect(accounts[0]).updateNodeResult([5, 15, 25], 50,[5, 3, 2]);
     await globalContract.computeGlobalOptimalPlan();
     await node.updateBestPositions();
 

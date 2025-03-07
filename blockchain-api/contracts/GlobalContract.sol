@@ -5,10 +5,23 @@ pragma solidity ^0.8.0;
    și calculează planul optim global folosind un mapping (cheia fiind ora din zi).
    Astfel se elimină necesitatea de a gestiona explicit matrice 2D.
 */
+
+/* INTERFAȚĂ PENTRU GLOBAL CONTRACT */
+interface GlobalContractInterface {
+    function updateNodeResult(
+        int[] calldata newPosition,
+        int newScore,
+        uint[] calldata newFlexibilityWeight
+    ) external;
+    function getGlobalOptimalPlanArray() external view returns (int[] memory);
+    function getLastUpdatedTimestamp() external view returns (uint);
+}
+
 contract GlobalContract {
     struct NodeResult {
         int[] bestPosition;
         int bestScore;
+        uint[] flexibilityWeight;
         bool exists;
     }
 
@@ -30,15 +43,23 @@ contract GlobalContract {
     // Se folosește un mapping pentru a stoca rezultatele și o listă pentru a itera ulterior.
     function updateNodeResult(
         int[] calldata newPosition,
-        int newScore
+        int newScore,
+        uint[] calldata newFlexibilityWeight
     ) external {
         if (!nodeResults[msg.sender].exists) {
-            nodeResults[msg.sender] = NodeResult(newPosition, newScore, true);
+            nodeResults[msg.sender] = NodeResult(
+                newPosition,
+                newScore,
+                newFlexibilityWeight,
+                true
+            );
             nodeAddresses.push(msg.sender);
         } else {
             if (newScore < nodeResults[msg.sender].bestScore) {
                 nodeResults[msg.sender].bestScore = newScore;
                 nodeResults[msg.sender].bestPosition = newPosition;
+                nodeResults[msg.sender]
+                    .flexibilityWeight = newFlexibilityWeight;
             }
         }
         // Setează numărul de ore din planul de consum, dacă nu a fost deja stabilit.
@@ -71,16 +92,20 @@ contract GlobalContract {
         require(numHours > 0, "numHours nu este setat");
 
         for (uint i = 0; i < numHours; i++) {
-            int sum = 0;
-            uint count = 0;
+            int weightedSum = 0;
+            uint totalWeight = 0;
             for (uint j = 0; j < nodeAddresses.length; j++) {
                 if (nodeResults[nodeAddresses[j]].exists) {
-                    sum += nodeResults[nodeAddresses[j]].bestPosition[i];
-                    count++;
+                    uint weight = nodeResults[nodeAddresses[j]]
+                        .flexibilityWeight[i];
+                    weightedSum +=
+                        int(weight) *
+                        nodeResults[nodeAddresses[j]].bestPosition[i];
+                    totalWeight += weight;
                 }
             }
-            if (count > 0) {
-                globalOptimalPlan[i] = sum / int(count);
+            if (totalWeight > 0) {
+                globalOptimalPlan[i] = weightedSum / int(totalWeight);
             } else {
                 globalOptimalPlan[i] = 5; // Evităm returnarea de 0
             }
