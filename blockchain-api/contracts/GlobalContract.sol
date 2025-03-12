@@ -78,11 +78,11 @@ contract GlobalContract {
     }
     // Returnează planul global complet sub formă de array.
     function getGlobalOptimalPlanArray() external view returns (int[] memory) {
-        int[] memory plan = new int[](numHours);
+        int[] memory copy = new int[](numHours);
         for (uint i = 0; i < numHours; i++) {
-            plan[i] = globalOptimalPlan[i];
+            copy[i] = globalOptimalPlan[i];
         }
-        return plan;
+        return copy;
     }
 
     // Calculează planul global optim. Pentru fiecare oră, se calculează media planurilor

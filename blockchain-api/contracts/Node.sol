@@ -65,17 +65,33 @@ contract Node {
         uint[] memory _flexibilityBelow
     ) {
         globalContract = GlobalContractInterface(globalContractAddress);
-        position = initialPosition;
-        velocity = initialVelocity;
-        personalBestPosition = initialPosition;
-        tariff = initialTariff;
-        capacity = initialCapacity;
-        renewableGeneration = initialRenewableGeneration;
-        batteryCapacity = initialBatteryCapacity;
-        batteryCharge = initialBatteryCharge;
-        flexibleLoad = initialFlexibleLoad;
-        flexibilityAbove = _flexibilityAbove;
-        flexibilityBelow = _flexibilityBelow;
+
+        // Copiază array-urile pentru a evita problema de read-only
+        position = new int[](initialPosition.length);
+        velocity = new int[](initialVelocity.length);
+        personalBestPosition = new int[](initialPosition.length);
+        tariff = new int[](initialTariff.length);
+        capacity = new uint[](initialCapacity.length);
+        renewableGeneration = new uint[](initialRenewableGeneration.length);
+        batteryCapacity = new uint[](initialBatteryCapacity.length);
+        batteryCharge = new uint[](initialBatteryCharge.length);
+        flexibleLoad = new uint[](initialFlexibleLoad.length);
+        flexibilityAbove = new uint[](_flexibilityAbove.length);
+        flexibilityBelow = new uint[](_flexibilityBelow.length);
+
+        for (uint i = 0; i < initialPosition.length; i++) {
+            position[i] = initialPosition[i];
+            personalBestPosition[i] = initialPosition[i];
+            velocity[i] = initialVelocity[i];
+            tariff[i] = initialTariff[i];
+            capacity[i] = initialCapacity[i];
+            renewableGeneration[i] = initialRenewableGeneration[i];
+            batteryCapacity[i] = initialBatteryCapacity[i];
+            batteryCharge[i] = initialBatteryCharge[i];
+            flexibleLoad[i] = initialFlexibleLoad[i];
+            flexibilityAbove[i] = _flexibilityAbove[i];
+            flexibilityBelow[i] = _flexibilityBelow[i];
+        }
     }
 
     // Funcția obiectiv calculează costul total de energie pe baza consumului, tarifului
@@ -96,7 +112,7 @@ contract Node {
                 int effectiveTariff = getEffectiveTariff(i, consumption);
                 totalCost -= effectiveTariff * (-consumption);
             } else {
-                // Tratarea consumului pozitiv 
+                // Tratarea consumului pozitiv
                 uint cons = uint(consumption);
                 if (tempRenewable[i] >= cons) {
                     tempRenewable[i] -= cons;
@@ -133,7 +149,11 @@ contract Node {
         return weights;
     }
     function getPosition() public view returns (int[] memory) {
-        return position;
+        int[] memory copy = new int[](position.length);
+        for (uint i = 0; i < position.length; i++) {
+            copy[i] = position[i];
+        }
+        return copy;
     }
 
     // Adaugă în contractul Node:
