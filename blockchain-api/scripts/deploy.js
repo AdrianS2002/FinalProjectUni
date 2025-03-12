@@ -1,5 +1,6 @@
 let mysql = require('mysql2');
 const SqlErrors = require("../src/models/db-errors");
+const { loadCSVData } = require("../scripts/loadCSVData");
 
 let dbIp = 'localhost';
 let dbUser = 'root';
@@ -72,6 +73,9 @@ async function main() {
 
     const accounts = await ethers.getSigners();  // All accounts from hardhat.config
 
+    const nodeParams = await loadCSVData();
+    console.log("🔹 CSV Data Loaded:", JSON.stringify(nodeParams, null, 2));
+
     const DateTime = await ethers.getContractFactory("DateTime");
     const dateTime = await DateTime.deploy();
     await dateTime.waitForDeployment();
@@ -84,49 +88,35 @@ async function main() {
 
     // Deploy Node folosind globalContract.target
     const Node = await ethers.getContractFactory("Node");
-     // Exemplu de valori pentru o rețea electrică cu 24 de ore:
-    // Consum optim de referință: 80 kW pe oră
-    const initialPosition = [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80];
-    // Pornim cu o viteză inițială zero (fără ajustări inițiale)
-    const initialVelocity = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    // Tarife constante, de exemplu 100 (unități monetare per kWh)
-    const initialTariff = [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100];
-    // Capacitate maximă a rețelei (ex: 1000 kW pe oră)
-    const initialCapacity = [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000];
-    // Energia regenerabilă disponibilă, de exemplu 20 kW pe oră
-    const initialRenewableGeneration = [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20];
-    // Capacitatea bateriei, de exemplu 500 kWh per oră
-    const initialBatteryCapacity = [500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500];
-    // Nivelul curent de încărcare a bateriilor, de exemplu 300 kWh
-    const initialBatteryCharge = [300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300];
-    // Flexible load (capacitatea nodului de a muta consumul) – de exemplu, 50 kW
-    const initialFlexibleLoad = [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50];
+    let nodes = [];
 
-    // Valorile de flexibilitate: dacă consumul optim este de 80 kW,
-    // flexibilityBelow = 25 înseamnă că nodul poate reduce consumul până la 55 kW,
-    // iar flexibilityAbove = 70 înseamnă că nodul poate crește consumul până la 150 kW.
-    const flexibilityAbove = [70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70];
-    const flexibilityBelow = [25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25];
+    for (let i = 0; i < nodeParams.length; i++) {
+        const params = nodeParams[i];
 
-    const node = await Node.deploy(
-        globalContract.target,  // Folosim .target pentru ethers v6
-        initialPosition,
-        initialVelocity,
-        initialTariff,
-        initialCapacity,
-        initialRenewableGeneration,
-        initialBatteryCapacity,
-        initialBatteryCharge,
-        initialFlexibleLoad,
-        flexibilityAbove,
-        flexibilityBelow
-    );
-    await node.waitForDeployment();
-    console.log("Deployed Node at:", node.target);
+        const node = await Node.deploy(
+            globalContract.target,
+            [...params.initialPosition],
+            [...params.initialVelocity],
+            [...params.initialTariff],
+            [...params.initialCapacity],
+            [...params.initialRenewableGeneration],
+            [...params.initialBatteryCapacity],
+            [...params.initialBatteryCharge],
+            [...params.initialFlexibleLoad],
+            [...params.flexibilityAbove],
+            [...params.flexibilityBelow]
+        );
+
+        await node.waitForDeployment();
+        nodes.push(node);
+        console.log(`✅ Node ${i + 1} deployed at:`, node.target);
+
+        // Salvează nodul în baza de date
+        InsertContract(`Node ${i + 1}`, node.target, accounts[0].address, "Node");
+    }
 
     // Save contracts in database using .target
     InsertContract("GlobalContract", globalContract.target, accounts[0].address, "GlobalContract");
-    InsertContract("Node", node.target, accounts[0].address, "Node");
 
     const TestContract = await ethers.getContractFactory("TestContract");
     const testContract = await TestContract.connect(accounts[1]).deploy(100);
