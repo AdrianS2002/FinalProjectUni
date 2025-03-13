@@ -121,14 +121,14 @@ describe("🔹 Node BLL Service Tests", function () {
         expect(result.result).to.equal(150);
     });
 
-    // Test pentru calculul penalizării nodului
-    it("should calculate node penalty", async function () {
-        sinon.stub(nodeBLL, "getNodePenalty").resolves({ totalPenalty: 200, hourlyPenalties: [50, 50, 50, 50] });
+    // // Test pentru calculul penalizării nodului
+    // it("should calculate node penalty", async function () {
+    //     sinon.stub(nodeBLL, "getNodePenalty").resolves({ totalPenalty: 200, hourlyPenalties: [50, 50, 50, 50] });
 
-        let result = await nodeBLL.getNodePenalty(username);
-        expect(result.totalPenalty).to.equal(200);
-        expect(result.hourlyPenalties).to.deep.equal([50, 50, 50, 50]);
-    });
+    //     let result = await nodeBLL.getNodePenalty(username);
+    //     expect(result.totalPenalty).to.equal(200);
+    //     expect(result.hourlyPenalties).to.deep.equal([50, 50, 50, 50]);
+    // });
 
     afterEach(() => {
         sinon.restore(); // Curățăm mock-urile după fiecare test

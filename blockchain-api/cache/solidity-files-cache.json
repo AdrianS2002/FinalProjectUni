@@ -116,8 +116,8 @@
       ]
     },
     "D:\\Facultate\\ANULIV\\LICENTA\\licenta-blockchain-api-main\\licenta-blockchain-api-main\\blockchain-api\\contracts\\Node.sol": {
-      "lastModificationDate": 1741771629143,
-      "contentHash": "ac3a1ce88662d74c6b1f3f657d7f5434",
+      "lastModificationDate": 1741895608094,
+      "contentHash": "4ecd584f9e9bd7e0e35a42ce4631b55a",
       "sourceName": "contracts/Node.sol",
       "solcConfig": {
         "version": "0.8.23",

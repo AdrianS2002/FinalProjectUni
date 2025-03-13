@@ -112,14 +112,14 @@ async function getObjectiveFunctionResult(username) {
 }
 
 
-async function getNodePenalty(username) {
-    try {
-        let penaltyData = await calculateNodePenalty(username);
-        return Promise.resolve(penaltyData);
-    } catch (e) {
-        return Promise.reject(e);
-    }
-}
+// async function getNodePenalty(username) {
+//     try {
+//         let penaltyData = await calculateNodePenalty(username);
+//         return Promise.resolve(penaltyData);
+//     } catch (e) {
+//         return Promise.reject(e);
+//     }
+// }
 
 module.exports = {
     updateVelocityAndPosition,
@@ -129,5 +129,5 @@ module.exports = {
     getPersonalBestPosition,
     updateBestPositions,
     getObjectiveFunctionResult,
-    getNodePenalty
+   // getNodePenalty
 };
