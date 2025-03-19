@@ -4,6 +4,10 @@ const bin_data = require('../../artifacts/contracts/GlobalContract.sol/GlobalCon
 let ErrorHandling = require('../models/error-handling');
 const { getSignerForUser } = require('../utils/commons');
 let EthErrors = require('../models/eth-errors.js');
+const { ethers } = require("hardhat");
+const { provider } = require('../utils/commons.js');
+
+
 
 // Funcție pentru a calcula planul global optim.
 // Necesită o semnătură (signer), deoarece se trimite o tranzacție.
@@ -84,6 +88,29 @@ async function getBestPosition(contract_address, nodeAddress) {
     }
 }
 
+async function getFrozenGlobalCost(contract_address) {
+    const contract = new ethers.Contract(contract_address, abi, provider);
+    try {
+      let result = await contract.frozenGlobalCost();
+      return { frozenGlobalCost: result };
+    } catch (e) {
+      console.log(e);
+      return new EthErrors.MethodCallError("GlobalContract", "getFrozenGlobalCost", "frozenGlobalCost");
+    }
+  }
+  
+  // Funcție pentru a obține planul global optim stocat (getBestGlobalPlan)
+  async function getBestGlobalPlan(contract_address) {
+    const contract = new ethers.Contract(contract_address, abi, provider);
+    try {
+      let result = await contract.getBestGlobalPlan();
+      return { bestGlobalPlan: result };
+    } catch (e) {
+      console.log(e);
+      return new EthErrors.MethodCallError("GlobalContract", "getBestGlobalPlan", "getBestGlobalPlan");
+    }
+  }
+
 
 module.exports = {
     computeGlobalOptimalPlan,
@@ -91,5 +118,7 @@ module.exports = {
     getGlobalOptimalPlanArray,
     getLastUpdatedTimestamp,
     updateNodeResult,
-    getBestPosition
+    getBestPosition,
+    getFrozenGlobalCost,   
+    getBestGlobalPlan      
 };

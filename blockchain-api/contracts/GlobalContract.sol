@@ -15,6 +15,8 @@ interface GlobalContractInterface {
     ) external;
     function getGlobalOptimalPlanArray() external view returns (int[] memory);
     function getLastUpdatedTimestamp() external view returns (uint);
+    function getBestGlobalPlan() external view returns (int[] memory);
+     function frozenGlobalCost() external view returns (int);
 }
 
 contract GlobalContract {
@@ -34,7 +36,15 @@ contract GlobalContract {
     // Numărul de ore pentru care se definește planul (ex.: 24)
     uint public numHours;
 
+    // Variabile noi pentru stocarea celui mai bun rezultat global
+    int public bestGlobalCost = type(int).max;
+    int[] public bestGlobalPlan;
+
+
+    int public frozenGlobalCost;
     uint public lastUpdatedTimestamp; // Momentul ultimei actualizări globale
+
+    bool public finalized = false;
 
     event NodeResultUpdated(address indexed node, int bestScore);
     event GlobalPlanComputed(int[] newPlan, uint timestamp);
@@ -73,9 +83,7 @@ contract GlobalContract {
         }
         emit NodeResultUpdated(msg.sender, newScore);
     }
-    function getBestPosition(address _node) public view returns (int[] memory) {
-        return nodeResults[_node].bestPosition;
-    }
+
     // Returnează planul global complet sub formă de array.
     function getGlobalOptimalPlanArray() external view returns (int[] memory) {
         int[] memory copy = new int[](numHours);
@@ -91,6 +99,7 @@ contract GlobalContract {
         require(nodeAddresses.length > 0, "Niciun nod inregistrat");
         require(numHours > 0, "numHours nu este setat");
 
+        // Calculul planului global curent ca medie ponderată
         for (uint i = 0; i < numHours; i++) {
             int weightedSum = 0;
             uint totalWeight = 0;
@@ -107,7 +116,7 @@ contract GlobalContract {
             if (totalWeight > 0) {
                 globalOptimalPlan[i] = weightedSum / int(totalWeight);
             } else {
-                globalOptimalPlan[i] = 5; // Evităm returnarea de 0
+                globalOptimalPlan[i] = 5; // Valoare default
             }
         }
         lastUpdatedTimestamp = block.timestamp;
@@ -115,12 +124,44 @@ contract GlobalContract {
             this.getGlobalOptimalPlanArray(),
             lastUpdatedTimestamp
         );
+
+        // Calculează costul total curent al rețelei (suma costurilor minime ale nodurilor)
+        int currentNetworkCost = 0;
+        for (uint j = 0; j < nodeAddresses.length; j++) {
+            if (nodeResults[nodeAddresses[j]].exists) {
+                currentNetworkCost += nodeResults[nodeAddresses[j]].bestScore;
+            }
+        }
+
+        // Actualizează bestGlobalPlan doar dacă s-a găsit un cost mai mic
+        if (bestGlobalPlan.length == 0 || currentNetworkCost < bestGlobalCost) {
+            bestGlobalCost = currentNetworkCost;
+            if (bestGlobalPlan.length != numHours) {
+                bestGlobalPlan = new int[](numHours);
+            }
+            for (uint i = 0; i < numHours; i++) {
+                bestGlobalPlan[i] = globalOptimalPlan[i];
+            }
+        }
     }
 
+    // Funcția pentru a "îngheța" soluția finală
+    function finalizePlan() external {
+        finalized = true;
+        frozenGlobalCost = bestGlobalCost;
+    }
     // Returnează valoarea planului global pentru o anumită oră.
     function getGlobalOptimalPlanHour(uint hour) external view returns (int) {
         require(hour < numHours, "Ora in afara intervalului");
         return globalOptimalPlan[hour];
+    }
+
+    function getBestGlobalPlan() external view returns (int[] memory) {
+        return bestGlobalPlan;
+    }
+
+    function getBestPosition(address _node) public view returns (int[] memory) {
+        return nodeResults[_node].bestPosition;
     }
 
     function getLastUpdatedTimestamp() external view returns (uint) {

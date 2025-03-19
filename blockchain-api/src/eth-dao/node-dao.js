@@ -5,11 +5,12 @@ const bin_data = require('../../artifacts/contracts/Node.sol/Node.json').bytecod
 let ErrorHandling = require('../models/error-handling');
 const { getSignerForUser } = require('../utils/commons');
 let EthErrors = require('../models/eth-errors.js');
-const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || "http://127.0.0.1:8545", {
-    name: "localnet",
-    chainId: 1337,
-    ensAddress: null,
-});
+// const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || "http://127.0.0.1:8545", {
+//     name: "localnet",
+//     chainId: 1337,
+//     ensAddress: null,
+// });
+const { provider } = require('../utils/commons');
 
 
 // ✅ Actualizează viteza și poziția (doar dacă timestamp-ul global s-a schimbat)
@@ -109,7 +110,7 @@ async function getPersonalBestScore(contract_address) {
 async function getPersonalBestPosition(contract_address) {
     const contract = new ethers.Contract(contract_address, abi, provider);
     try {
-        let result = await contract.personalBestPosition();
+        let result = await contract.getPersonalBestPosition();
         return result;
     } catch (e) {
         console.log(e);
@@ -131,6 +132,17 @@ async function updateBestPositions(contract_address, ownerAddress) {
     }
 }
 
+async function getFrozenCost(contract_address) {
+    const contract = new ethers.Contract(contract_address, abi, provider);
+    try {
+        let result = await contract.getFrozenCost();
+        return result;
+    } catch (e) {
+        console.log(e);
+        return new EthErrors.MethodCallError("Node", "getFrozenCost", "getFrozenCost");
+    }
+}
+
 module.exports = {
     updateVelocityAndPosition,
     getPosition,
@@ -139,5 +151,6 @@ module.exports = {
     updateBestPositions,
     getLastKnownGlobalTimestamp,
     getLastUpdatedTimestamp,
-    getObjectiveFunctionResult
+    getObjectiveFunctionResult,
+    getFrozenCost
 };

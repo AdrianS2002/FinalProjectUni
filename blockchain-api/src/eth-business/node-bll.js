@@ -100,17 +100,41 @@ async function updateBestPositions(username) {
     }
 }
 
-//  Obține rezultatul funcției obiectiv pentru un nod
-async function getObjectiveFunctionResult(username) {
+// POATE TREBUIE SA EVIN LA ASTA  Obține rezultatul funcției obiectiv pentru un nod
+// async function getObjectiveFunctionResult(username) {
+//     try {
+//         let { contractAddress } = await getNodeContractForUser(username);
+//         let result = await nodeDAO.getObjectiveFunctionResult(contractAddress);
+//         return Promise.resolve({ result });
+//     } catch (e) {
+//         return Promise.reject(e);
+//     }
+// }
+
+
+// Obține frozen cost (costul înghețat al nodului)
+async function getFrozenCost(username) {
     try {
         let { contractAddress } = await getNodeContractForUser(username);
-        let result = await nodeDAO.getObjectiveFunctionResult(contractAddress);
-        return Promise.resolve({ result });
+        let frozenCost = await nodeDAO.getFrozenCost(contractAddress);
+        return Promise.resolve({ frozenCost });
     } catch (e) {
         return Promise.reject(e);
     }
 }
 
+
+
+async function getObjectiveFunctionResult(username) {
+    try {
+        let { contractAddress } = await getNodeContractForUser(username);
+        let positionObj = await nodeDAO.getPosition(contractAddress); 
+        let result = await nodeDAO.getObjectiveFunctionResult(contractAddress, positionObj.position);
+        return Promise.resolve({ result });
+    } catch (e) {
+        return Promise.reject(e);
+    }
+}
 
 // async function getNodePenalty(username) {
 //     try {
@@ -129,5 +153,6 @@ module.exports = {
     getPersonalBestPosition,
     updateBestPositions,
     getObjectiveFunctionResult,
+    getFrozenCost
    // getNodePenalty
 };

@@ -80,11 +80,34 @@ async function getBestPosition(username, nodeAddress) {
     }
 }
 
+async function getFrozenGlobalCost(username) {
+    try {
+        let { contractAddress } = await getGlobalContractForUser(username);
+        let result = await globalDAO.getFrozenGlobalCost(contractAddress);
+        return Promise.resolve(result);
+    } catch (e) {
+        return Promise.reject(e);
+    }
+}
+
+// ✅ 🔹 Obține cel mai bun plan global
+async function getBestGlobalPlan(username) {
+    try {
+        let { contractAddress } = await getGlobalContractForUser(username);
+        let result = await globalDAO.getBestGlobalPlan(contractAddress);
+        return Promise.resolve(result);
+    } catch (e) {
+        return Promise.reject(e);
+    }
+}
+
 module.exports = {
     computeGlobalOptimalPlan,
     getGlobalOptimalPlanHour,
     getGlobalOptimalPlanArray,
     getLastUpdatedTimestamp,
     updateNodeResult,
-    getBestPosition
+    getBestPosition,
+    getFrozenGlobalCost,   
+    getBestGlobalPlan 
 };
