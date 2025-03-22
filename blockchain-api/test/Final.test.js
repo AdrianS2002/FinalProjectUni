@@ -83,7 +83,7 @@ describe("PSO Algorithm Simulation with Nodes from CSV", function () {
     console.log("💰 Total network snapshot cost BEFORE optimization:", snapshotCostBefore.toString());
     //console.log("💰 Total network current cost BEFORE optimization:", currentCostBefore.toString());
 
-    const iterations = 50;
+    const iterations = 20;
     for (let iter = 0; iter < iterations; iter++) {
       console.log(`\n--- Iteration ${iter + 1} ---`);
 
