@@ -1,7 +1,8 @@
 const SqlErrors = require("../models/db-errors.js");
 const user = require("../db-dao/models/account.js");
 const uuid = require("uuid");
-
+const { ethers } = require("hardhat");
+const provider = ethers.provider;
 function generateUUID()
 {
     return uuid.v4();
@@ -46,5 +47,6 @@ module.exports ={
     getUnique,
     listToDTO,
     getSignerForUser,
-    getDefaultSigner
+    getDefaultSigner,
+    provider
 }

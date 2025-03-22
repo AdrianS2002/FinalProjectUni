@@ -10,47 +10,60 @@ interface GlobalContractInterface {
     ) external;
     function getGlobalOptimalPlanArray() external view returns (int[] memory);
     function getLastUpdatedTimestamp() external view returns (uint);
+    function getBestGlobalPlan() external view returns (int[] memory);
+    function frozenGlobalCost() external view returns (int);
 }
 
 /* CONTRACTUL PENTRU UN NOD (prosumer)
-   Fiecare nod își gestionează planul de consum pe ore și îl actualizează folosind
-   un algoritm PSO. Valorile privind flexibilitatea (flexibilityAbove și flexibilityBelow)
-   sunt stocate on-chain, dar orice penalizare suplimentară (de exemplu, costuri mai mari)
-   se calculează off-chain.
+   Fiecare nod își gestionează planul de consum pe ore și își actualizează
+   poziția și costul folosind un algoritm PSO. Se salvează snapshot-ul costului
+   optim și al anumitor parametri (ex.: resurse regenerabile și nivelul bateriei)
+   pentru a putea recalcula costul ulterior, în condiții identice.
 */
 contract Node {
-    // Vectorii reprezintă planul de consum pe ore (ex: 24 de ore)
+    // Vectorii pentru planul de consum (ex: 24 de ore)
     int[] public position;
     int[] public velocity;
     int[] public personalBestPosition;
     int public personalBestScore = type(int).max;
-    uint public lastKnownGlobalTimestamp; // Ultimul timestamp sincronizat
+    uint public lastKnownGlobalTimestamp;
 
-    // Parametrii PSO: w – inerție, c1 și c2 – coeficienți pentru componentele cognitivă și socială.
+    // Parametrii PSO
     int public w = 50;
     int public c1 = 200;
     int public c2 = 200;
 
-    // Date specifice nodului (preluate off-chain, de ex. din CSV)
-    int[] public tariff; // Tarifele pe oră
-    uint[] public capacity; // Capacitatea maximă a rețelei pe oră
-    uint[] public renewableGeneration; // Energia regenerabilă disponibilă pe oră
-    uint[] public batteryCapacity; // Capacitatea bateriei
-    uint[] public batteryCharge; // Nivelul curent de încărcare al bateriei
-    uint[] public flexibleLoad; // Limită de flexibilitate (mutare consum)
+    // Date specifice nodului
+    int[] public tariff;
+    uint[] public capacity;
+    uint[] public renewableGeneration;
+    uint[] public batteryCapacity;
+    uint[] public batteryCharge;
+    uint[] public flexibleLoad;
 
-    // Valorile de flexibilitate, definite on-chain (date din CSV):
-    // - flexibilityAbove: cât de mult poate crește consumul (de exemplu, dacă nodul poate consuma mai mult în anumite ore)
-    // - flexibilityBelow: cât de mult poate scădea consumul (de exemplu, dacă nodul poate reduce consumul în orele cu tarif ridicat)
+    // Penalizări locale
+    int constant ALPHA = 5;
+    int constant BETA = 3;
+    int constant GAMMA = 2;
+
+    // Parametrii pentru influența planului global
+    int constant PENALTY_GLOBAL = 4;
+    int constant REDEEM_GLOBAL = 2;
+
+    // Valorile de flexibilitate
     uint[] public flexibilityAbove;
     uint[] public flexibilityBelow;
 
     GlobalContractInterface public globalContract;
 
     event BestPositionUpdated(address indexed node, int newScore);
-    event NewPlanReceived(uint timestamp); // Semnalează primirea unui nou plan global
+    event NewPlanReceived(uint timestamp);
 
-    // Constructor extins pentru a primi și valorile de flexibilitate
+    // changed: Adăugăm variabile pentru snapshot-ul parametrilor critici
+    uint[] public frozenRenewableGeneration;
+    uint[] public frozenBatteryCharge;
+
+    // Constructor extins
     constructor(
         address globalContractAddress,
         int[] memory initialPosition,
@@ -66,7 +79,6 @@ contract Node {
     ) {
         globalContract = GlobalContractInterface(globalContractAddress);
 
-        // Copiază array-urile pentru a evita problema de read-only
         position = new int[](initialPosition.length);
         velocity = new int[](initialVelocity.length);
         personalBestPosition = new int[](initialPosition.length);
@@ -94,25 +106,27 @@ contract Node {
         }
     }
 
-    // Funcția obiectiv calculează costul total de energie pe baza consumului, tarifului
-    // și disponibilității energiei regenerabile. Penalizarea suplimentară (dacă nodul nu poate reduce consumul)
-    // se calculează off-chain.
+    /* 
+       Funcția obiectiv calculează costul total de energie pentru un plan de consum,
+       ținând cont de consum, tarife, penalizări locale și ajustări globale.
+    */
     function objectiveFunction(int[] memory pos) public view returns (int) {
         int totalCost = 0;
         uint len = pos.length;
+        // Copii locale ale valorilor curente
         uint[] memory tempRenewable = renewableGeneration;
         uint[] memory tempBattery = batteryCharge;
 
+        int[] memory globalPlan = globalContract.getBestGlobalPlan();
+
         for (uint i = 0; i < len; i++) {
             int consumption = pos[i];
-            // Prioritizăm consumul de energie regenerabilă
+            int localCost = 0;
+
             if (consumption < 0) {
-                // Exemplu: reward = - (consumption in absolute value * un factor)
-                // Astfel, costul devine negativ, indicând un beneficiu.
                 int effectiveTariff = getEffectiveTariff(i, consumption);
-                totalCost -= effectiveTariff * (-consumption);
+                localCost = -effectiveTariff * (-consumption);
             } else {
-                // Tratarea consumului pozitiv
                 uint cons = uint(consumption);
                 if (tempRenewable[i] >= cons) {
                     tempRenewable[i] -= cons;
@@ -128,14 +142,90 @@ contract Node {
                     cons -= tempBattery[i];
                     tempBattery[i] = 0;
                 }
-                totalCost += int(tariff[i]) * int(cons);
+                localCost = int(tariff[i]) * int(cons);
             }
+
+            int overConsumption = consumption > int(capacity[i])
+                ? consumption - int(capacity[i])
+                : int(0);
+            int bestCons = personalBestPosition[i];
+            int flex = int(flexibilityAbove[i] + flexibilityBelow[i]);
+            int diff = consumption - bestCons;
+            int absDiff = diff >= 0 ? diff : -diff;
+            int flexibilityViolation = absDiff > flex ? absDiff - flex : int(0);
+            int maxRenew = int(renewableGeneration[i]);
+            int unusedRenewable = maxRenew > consumption
+                ? maxRenew - consumption
+                : int(0);
+            int localPenalty = overConsumption *
+                ALPHA +
+                flexibilityViolation *
+                BETA +
+                unusedRenewable *
+                GAMMA;
+
+            int globalAdjustment = 0;
+            if (globalPlan.length == len) {
+                int globalValue = globalPlan[i];
+                int deviation = consumption - globalValue;
+                int absDeviation = deviation >= 0 ? deviation : -deviation;
+                int threshold = globalValue != 0 ? globalValue / 10 : int(0);
+                if (absDeviation > threshold) {
+                    if (deviation > 0) {
+                        globalAdjustment =
+                            (absDeviation - threshold) *
+                            PENALTY_GLOBAL;
+                    } else {
+                        globalAdjustment = -((absDeviation - threshold) *
+                            REDEEM_GLOBAL);
+                    }
+                }
+            }
+            int hourCost = localCost + localPenalty + globalAdjustment;
+            totalCost += hourCost;
         }
         return totalCost;
     }
 
-    // Calculează flexibilitatea (pondera de ajustare) pentru fiecare oră.
-    // Exemplu: weight = (flexibilityAbove + flexibilityBelow) / 2.
+    // Funcția de calcul a tarifului efectiv (cu discount)
+    function getEffectiveTariff(
+        uint hour,
+        int consumption
+    ) public view returns (int) {
+        int base = int(tariff[hour]);
+        if (consumption < 0) {
+            uint absConsumption = uint(-consumption);
+            uint extraDiscount = absConsumption / 2;
+            uint totalDiscount = 20 + extraDiscount;
+            if (totalDiscount > 40) {
+                totalDiscount = 40;
+            }
+            return (base * int(100 - totalDiscount)) / 100;
+        } else {
+            return base;
+        }
+    }
+
+    // Actualizează cea mai bună poziție și transmite rezultatul către GlobalContract.
+    function updateBestPositions() public {
+        int currentScore = objectiveFunction(position);
+        if (currentScore < personalBestScore) {
+            personalBestScore = currentScore;
+            personalBestPosition = position;
+            // : Salvăm și snapshot-ul valorilor critice la momentul obținerii celui mai bun cost.
+            delete frozenRenewableGeneration;
+            delete frozenBatteryCharge;
+            for (uint i = 0; i < renewableGeneration.length; i++) {
+                frozenRenewableGeneration.push(renewableGeneration[i]);
+                frozenBatteryCharge.push(batteryCharge[i]);
+            }
+            emit BestPositionUpdated(address(this), currentScore);
+        }
+        uint[] memory flexWeights = calculateFlexibilityWeight();
+        globalContract.updateNodeResult(position, currentScore, flexWeights);
+    }
+
+    // Calculează "ponderile de flexibilitate" pentru fiecare oră.
     function calculateFlexibilityWeight()
         internal
         view
@@ -148,60 +238,15 @@ contract Node {
         }
         return weights;
     }
-    function getPosition() public view returns (int[] memory) {
-        int[] memory copy = new int[](position.length);
-        for (uint i = 0; i < position.length; i++) {
-            copy[i] = position[i];
-        }
-        return copy;
-    }
-
-    // Adaugă în contractul Node:
-    function getEffectiveTariff(
-        uint hour,
-        int consumption
-    ) public view returns (int) {
-        int base = int(tariff[hour]);
-        if (consumption < 0) {
-            uint absConsumption = uint(-consumption);
-            // Discount de bază: 20%
-            // Discount suplimentar: 0.5% per unitate injectată
-            uint extraDiscount = absConsumption / 2; // (0.5% * absConsumption)
-            uint totalDiscount = 20 + extraDiscount;
-            // Limita maximă a discountului este de 40%
-            if (totalDiscount > 40) {
-                totalDiscount = 40;
-            }
-            return (base * int(100 - totalDiscount)) / 100;
-        } else {
-            return base;
-        }
-    }
-
-    // Nodul își actualizează cea mai bună soluție personală și transmite rezultatul către GlobalContract.
-    // Observație: Smart contractul transmite doar planul de consum și costul aferent (fără penalizare on-chain).
-    // Algoritmul off-chain va calcula, ulterior, penalizarea dacă flexibilitatea nodului nu permite optimizarea.
-    function updateBestPositions() public {
-        int currentScore = objectiveFunction(position);
-        if (currentScore < personalBestScore) {
-            personalBestScore = currentScore;
-            personalBestPosition = position;
-            emit BestPositionUpdated(address(this), currentScore);
-        }
-        uint[] memory flexWeights = calculateFlexibilityWeight();
-        globalContract.updateNodeResult(position, currentScore, flexWeights);
-    }
 
     // Actualizează viteza și poziția folosind planul global și algoritmul PSO.
-    // Limitele de flexibilitate sunt aplicate on-chain pentru a restricționa valorile consumului,
-    // dar orice penalizare suplimentară (costuri mai mari) se va calcula off-chain.
     function updateVelocityAndPosition() public {
         uint globalTimestamp = globalContract.getLastUpdatedTimestamp();
         if (globalTimestamp > lastKnownGlobalTimestamp) {
             lastKnownGlobalTimestamp = globalTimestamp;
             emit NewPlanReceived(globalTimestamp);
         }
-        int[] memory globalPlan = globalContract.getGlobalOptimalPlanArray();
+        int[] memory globalPlan = globalContract.getBestGlobalPlan();
         require(globalPlan.length == position.length, "Dimensiuni inegale");
 
         for (uint i = 0; i < position.length; i++) {
@@ -211,11 +256,15 @@ contract Node {
             uint r2 = uint(
                 keccak256(abi.encodePacked(block.timestamp, i + 1, velocity[i]))
             ) % 100;
-            int randomFactor = (int(
-                uint(
-                    keccak256(abi.encodePacked(block.timestamp, i, velocity[i]))
+            int randomFactor = (
+                int(
+                    uint(
+                        keccak256(
+                            abi.encodePacked(block.timestamp, i, velocity[i])
+                        )
+                    ) % 101
                 )
-            ) % 101) - 50;
+            ) - 50;
 
             int diffPersonal = personalBestPosition[i] - position[i];
             int diffGlobal = globalPlan[i] - position[i];
@@ -232,8 +281,6 @@ contract Node {
 
             position[i] = position[i] + velocity[i];
 
-            // Aplicăm limitele de flexibilitate:
-            // Se presupune că personalBestPosition reprezintă consumul de referință.
             int minAllowed = personalBestPosition[i] -
                 int(flexibilityBelow[i]) *
                 2;
@@ -248,5 +295,116 @@ contract Node {
                 position[i] = maxAllowed;
             }
         }
+    }
+
+
+
+    function objectiveFunctionFrozen(
+        int[] memory pos
+    ) public view returns (int) {
+        int totalCost = 0;
+        uint len = pos.length;
+        // Copiem snapshot-ul valorilor salvate
+        uint[] memory tempRenewable = new uint[](
+            frozenRenewableGeneration.length
+        );
+        for (uint i = 0; i < frozenRenewableGeneration.length; i++) {
+            tempRenewable[i] = frozenRenewableGeneration[i];
+        }
+        uint[] memory tempBattery = new uint[](frozenBatteryCharge.length);
+        for (uint i = 0; i < frozenBatteryCharge.length; i++) {
+            tempBattery[i] = frozenBatteryCharge[i];
+        }
+        int[] memory globalPlan = globalContract.getBestGlobalPlan();
+
+        for (uint i = 0; i < len; i++) {
+            int consumption = pos[i];
+            int localCost = 0;
+
+            if (consumption < 0) {
+                int effectiveTariff = getEffectiveTariff(i, consumption);
+                localCost = -effectiveTariff * (-consumption);
+            } else {
+                uint cons = uint(consumption);
+                if (tempRenewable[i] >= cons) {
+                    tempRenewable[i] -= cons;
+                    cons = 0;
+                } else {
+                    cons -= tempRenewable[i];
+                    tempRenewable[i] = 0;
+                }
+                if (tempBattery[i] >= cons) {
+                    tempBattery[i] -= cons;
+                    cons = 0;
+                } else {
+                    cons -= tempBattery[i];
+                    tempBattery[i] = 0;
+                }
+                localCost = int(tariff[i]) * int(cons);
+            }
+
+            int overConsumption = consumption > int(capacity[i])
+                ? consumption - int(capacity[i])
+                : int(0);
+            int bestCons = personalBestPosition[i];
+            int flex = int(flexibilityAbove[i] + flexibilityBelow[i]);
+            int diff = consumption - bestCons;
+            int absDiff = diff >= 0 ? diff : -diff;
+            int flexibilityViolation = absDiff > flex ? absDiff - flex : int(0);
+            // Folosim snapshot-ul pentru resurse regenerabile
+            int maxRenew = int(frozenRenewableGeneration[i]);
+            int unusedRenewable = maxRenew > consumption
+                ? maxRenew - consumption
+                : int(0);
+            int localPenalty = overConsumption *
+                ALPHA +
+                flexibilityViolation *
+                BETA +
+                unusedRenewable *
+                GAMMA;
+
+            int globalAdjustment = 0;
+            if (globalPlan.length == len) {
+                int globalValue = globalPlan[i];
+                int deviation = consumption - globalValue;
+                int absDeviation = deviation >= 0 ? deviation : -deviation;
+                int threshold = globalValue != 0 ? globalValue / 10 : int(0);
+                if (absDeviation > threshold) {
+                    if (deviation > 0) {
+                        globalAdjustment =
+                            (absDeviation - threshold) *
+                            PENALTY_GLOBAL;
+                    } else {
+                        globalAdjustment = -((absDeviation - threshold) *
+                            REDEEM_GLOBAL);
+                    }
+                }
+            }
+            int hourCost = localCost + localPenalty + globalAdjustment;
+            totalCost += hourCost;
+        }
+        return totalCost;
+    }
+    function getPersonalBestPosition() public view returns (int[] memory) {
+        return personalBestPosition;
+    }
+
+    // Convenience function: returnează costul calculat cu snapshot-ul
+    function getFrozenCost() public view returns (int) {
+        return objectiveFunctionFrozen(personalBestPosition);
+    }
+
+    // changed: Funcția applyFinalPlan nu mai modifică poziția sau costul,
+    // păstrând snapshot-ul din iterația optimă.
+    function applyFinalPlan() external {
+        // Doar se poate seta un flag de finalizare dacă este nevoie.
+    }
+
+    function getPosition() public view returns (int[] memory) {
+        int[] memory copy = new int[](position.length);
+        for (uint i = 0; i < position.length; i++) {
+            copy[i] = position[i];
+        }
+        return copy;
     }
 }
