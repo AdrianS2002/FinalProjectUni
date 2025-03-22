@@ -5,6 +5,11 @@ async function getContracts() {
     return contracts;
 }
 
+async function getContractById(id) {
+    const [contracts] = await db.query('SELECT * FROM contracts WHERE id = ?', [id]);
+    return contracts[0];
+}
+
 async function addContract({ name, address, type, owner }) {
     const [result] = await db.query('INSERT INTO contracts (name, address, type, owner) VALUES (?, ?, ?, ?)', [name, address, type, owner]);
     return result.insertId;
@@ -36,6 +41,7 @@ async function updateContract(id, data) {
 
 module.exports = {
     getContracts,
+    getContractById,
     addContract,
     deleteContract,
     updateContract

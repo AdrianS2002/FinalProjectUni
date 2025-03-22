@@ -7,6 +7,14 @@ router.get('/', async (req, res) => {
     res.send(contracts);
 });
 
+router.get('/:id', async (req, res) => {
+    const contract = await contractService.getContractById(req.params.id);
+    if (!contract) {
+        return res.status(404).send({ error: 'Contract not found' });
+    }
+    res.send(contract);
+});
+
 router.post('/', async (req, res) => {
     const contractId = await contractService.addContract(req.body);
     res.status(201).send({ message: 'Contract created', contractId });
