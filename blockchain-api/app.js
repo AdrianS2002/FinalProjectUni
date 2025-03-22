@@ -15,6 +15,7 @@ let testRouter = require('./src/routes/test-contract-route');
 let chainRouter = require('./src/routes/chain-route');
 const authRoutes = require('./src/routes/auth-routes');
 const contractRoutes = require('./src/routes/contract-routes');
+const userRoutes = require('./src/routes/user-routes');
 let app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -45,6 +46,7 @@ app.use(baseURL + '/chain', chainRouter);
 app.use(baseURL + '/test', testRouter);
 app.use(baseURL + '/auth', authRoutes);
 app.use(baseURL + '/contracts', contractRoutes);
+app.use(baseURL + '/users', userRoutes);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
     next(createError(404));
