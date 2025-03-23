@@ -6,12 +6,18 @@ const globalContractService = require('./global-bll');
 
 //Funcție auxiliară pentru a obține contractul Node asociat unui utilizator
 async function getNodeContractForUser(username) {
+    console.log(`🔎 Looking for account by username: ${username}`);
     let account = await accountDao.QueryAccountAddressByUsername(username);
+    console.log("📥 Account result:", account);
+
     if (!account || !account.address) {
         throw new Error(`⚠️ No account found for username: ${username}`);
     }
 
+    console.log(`🔎 Looking for Node contract for address: ${account.address}`);
     let contract = await contractDao.QueryContractByTypeAndOwner(enums.ContractType.NODE, account.address);
+    console.log("📥 Contract query result:", contract);
+
     if (!contract || !contract.address) {
         throw new Error(`⚠️ No Node contract found for user: ${username}`);
     }
@@ -19,6 +25,7 @@ async function getNodeContractForUser(username) {
     console.log("✅ Found Node Contract:", contract.address);
     return { contractAddress: contract.address, ownerAddress: account.address };
 }
+
 
 
 //Actualizează viteza și poziția pentru un nod (doar dacă timestamp-ul global s-a schimbat)
@@ -44,16 +51,19 @@ async function updateVelocityAndPosition(username, global_contract_address) {
 
 // Obține poziția curentă a unui nod
 async function getPosition(username) {
+    console.log(`➡️  getPosition called with username: ${username}`);
     try {
         let { contractAddress } = await getNodeContractForUser(username);
+        console.log(`✅ Contract address found for ${username}: ${contractAddress}`);
         let positionData = await nodeDAO.getPosition(contractAddress);
-        console.log("Fetched position from DAO:", positionData); // Debugging
-
-        return positionData; // Acesta trebuie să fie { position: [10, 20, 30] }
+        console.log("📊 Fetched position from DAO:", positionData);
+        return positionData;
     } catch (e) {
+        console.error("❌ Error in getPosition:", e);
         return Promise.reject(e);
     }
 }
+
 
 
 // Obține timestamp-ul global cunoscut de nod

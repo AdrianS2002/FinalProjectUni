@@ -2,7 +2,10 @@ const SqlErrors = require("../models/db-errors.js");
 const user = require("../db-dao/models/account.js");
 const uuid = require("uuid");
 const { ethers } = require("hardhat");
-const provider = ethers.provider;
+const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545", {
+    name: "localnet",
+    chainId: 1337
+});
 function generateUUID()
 {
     return uuid.v4();

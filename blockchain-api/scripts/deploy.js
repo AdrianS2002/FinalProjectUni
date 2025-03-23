@@ -37,16 +37,18 @@ InsertContractWithUUID = (contract_uuid, name, address, owner, type) => {
 };
 
 const InsertContract = (name, address, owner, type) => {
+    console.log(`📥 Inserting contract ${name}, type ${type}, address ${address}, owner ${owner} in DB`);
     db.query(sqlAddContractWithOwnerMe, [name, address, owner, type], (err) => {
         if (err) {
-            console.error("SQL Insert Error:", err.sqlMessage || err);
+            console.error("❌ SQL Insert Error:", err.sqlMessage || err);
             console.error("Query:", sqlAddContractWithOwnerMe);
             console.error("Params:", { name, address, owner, type });
         } else {
-            console.log(`Inserted contract: ${name} with address: ${address}`);
+            console.log(`✅ Inserted contract: ${name} with address: ${address}`);
         }
     });
 };
+
 
 DeleteAll = () => {
     db.query(sqlDeleteAllContracts, (err, result) => {
@@ -57,8 +59,70 @@ DeleteAll = () => {
     });
 };
 
+async function getAddressByUsername(username) {
+    console.log(`🔎 Caut adresa pentru username: ${username}`);
+    const [rows] = await db.promise().query(
+        'SELECT address FROM users WHERE id = (SELECT user_id FROM credentials WHERE username = ?)',
+        [username]
+    );
+    console.log("📥 Rezultat găsit pentru user:", rows);
+    if (rows.length > 0) {
+        console.log(`✅ Adresă utilizator: ${rows[0].address}`);
+        return rows[0].address;
+    } else {
+        throw new Error(`❌ User ${username} not found in DB`);
+    }
+}
+
+
+async function runPSO(globalContract, nodes, iterations = 20) {
+    console.log("=== Initial Node Positions ===");
+    for (let i = 0; i < nodes.length; i++) {
+        let posArray = Array.from(await nodes[i].getPosition());
+        console.log(`Node ${i + 1} initial position:`, posArray.map(p => p.toString()));
+        await nodes[i].updateBestPositions();
+    }
+
+    await globalContract.computeGlobalOptimalPlan();
+    console.log("\n=== Initial Global Plan ===");
+    let initialPlan = Array.from(await globalContract.getGlobalOptimalPlanArray());
+    console.log(initialPlan.map(x => x.toString()));
+
+    for (let iter = 0; iter < iterations; iter++) {
+        console.log(`\n--- Iteration ${iter + 1} ---`);
+
+        for (const node of nodes) {
+            await node.updateBestPositions();
+        }
+
+        await globalContract.computeGlobalOptimalPlan();
+        let currentGlobalPlan = Array.from(await globalContract.getGlobalOptimalPlanArray());
+        console.log(`Iteration ${iter + 1} - Global Plan:`, currentGlobalPlan.map(x => x.toString()));
+
+        for (const node of nodes) {
+            await node.updateVelocityAndPosition();
+        }
+
+        for (const node of nodes) {
+            await node.updateBestPositions();
+        }
+
+        for (let i = 0; i < nodes.length; i++) {
+            let posArray = Array.from(await nodes[i].getPosition());
+            console.log(`Node ${i + 1} position:`, posArray.map(x => x.toString()));
+        }
+    }
+
+    await globalContract.finalizePlan();
+    console.log("✅ Plan finalized in contract.");
+}
+
+
+
 // Connect to DB, delete all contracts,
 async function main() {
+    console.log(`🌐 Connecting to MySQL at ${dbIp}, database: ${dbname}...`);
+
 
     db = mysql.createConnection(db_config); // Recreate the connection, since the old one cannot be reused.
 
@@ -111,8 +175,17 @@ async function main() {
         nodes.push(node);
         console.log(`✅ Node ${i + 1} deployed at:`, node.target);
 
+        const code = await ethers.provider.getCode(node.target);
+        console.log(`🔍 Contract code length for Node ${i + 1}: ${code.length}`);
+        if (code.length <= 2) {
+            console.error(`❌ Contractul pentru Node ${i + 1} NU a fost implementat corect la adresa ${node.target}`);
+        } else {
+            console.log(`✅ Contractul pentru Node ${i + 1} verificat on-chain la adresa ${node.target}`);
+        }
+
+        const ownerAddress = await getAddressByUsername('dsrl'); 
         // Salvează nodul în baza de date
-        InsertContract(`Node ${i + 1}`, node.target, accounts[0].address, "Node");
+        InsertContract(`Node ${i + 1}`, node.target, ownerAddress , "Node");
     }
 
     // Save contracts in database using .target
@@ -122,6 +195,26 @@ async function main() {
     const testContract = await TestContract.connect(accounts[1]).deploy(100);
     await testContract.waitForDeployment();
     await InsertContractWithUUID("d00597e0-2e5c-4487-ac6c-72866ad3514c", "TestContract", testContract.target, accounts[1].address, "TestContract");
+
+    console.log("===========================================");
+    db.query('SELECT * FROM contracts', (err, results) => {
+        if (err) {
+            console.error("❌ Eroare la citirea contractelor din DB");
+        } else {
+            console.log("📜 Contractele existente în baza de date:");
+            console.table(results);
+        }
+    });
+
+    console.log("\n🚀 Running PSO optimization after deploy...");
+    await runPSO(globalContract, nodes, 20);
+
+    console.log("\n✅ PSO Optimization completed and frozen in blockchain.");
+
+    // Opțional: verifici frozen cost-ul:
+    const frozenCost = await globalContract.bestGlobalCost();
+    console.log(`💰 Frozen best global cost after deploy optimization: ${frozenCost}`);
+    
 }
 
 main()

@@ -4,28 +4,33 @@ const {SqlError} = require("../models/db-errors");
 const commons = require("../utils/commons");
 const contractModel = require("./models/contract");
 
-const sqlSelectByTypeAndOwner = "SELECT * FROM contracts where type like ? and owner like ? ";
+const sqlSelectByTypeAndOwner = "SELECT * FROM contracts WHERE type = ? AND LOWER(owner) = LOWER(?)";
+
 const sqlAddContractWithOwner = "INSERT INTO contracts (name, address, owner, type) VALUES (?, ?, ?, ?)";
 
-QueryContractByTypeAndOwner = (type, owner) => {
+const QueryContractByTypeAndOwner = (type, owner) => {
+    console.log(`➡️ Executing QueryContractByTypeAndOwner with type='${type}' and owner='${owner}'`);
     return new Promise((resolve, reject) => {
-        db.query(sqlSelectByTypeAndOwner, [type, owner], (err, contract) => {
-            if(err){
+        db.query(sqlSelectByTypeAndOwner, [type, owner], (err, contracts) => {
+            if (err) {
+                console.error("❌ SQL Error in QueryContractByTypeAndOwner:", err);
                 return reject(new SqlError("QueryContractByTypeAndOwner"));
             }
-            try{
-                return resolve(commons.getUnique(contract, "QueryContractByTypeAndOwner", "UUID"));
-            }catch (e) {
-                return reject(e);
+            console.log("📥 Query results:", contracts);
+            if (!contracts || contracts.length === 0) {
+                console.error("⚠️ No SQL results for QueryContractByTypeAndOwner");
+                return reject(new Error("No SQL results on QueryContractByTypeAndOwner"));
             }
-        })
-    })
-}
+            return resolve(contracts[0]);
+        });
+    });
+};
+
 
 QueryInsertContract = (name, address, owner, type) => {
     let contract_id = commons.generateUUID();
     return new Promise((resolve, reject) => {
-        db.query(sqlAddContractWithOwner, [contract_id, name, address, owner, type], (err, contract) => {
+        db.query(sqlAddContractWithOwner, [name, address, owner, type], (err, contract) => {
             if(err){
                 reject(new SqlError("QueryInsertContract"));
             }
