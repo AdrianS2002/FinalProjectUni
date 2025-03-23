@@ -10,6 +10,11 @@ async function getContractById(id) {
     return contracts[0];
 }
 
+async function getGlobalContract(){
+    const [contracts] = await db.query('SELECT * FROM contracts WHERE type = "GlobalContract"');
+    return contracts[0];
+}
+
 async function addContract({ name, address, type, owner }) {
     const [result] = await db.query('INSERT INTO contracts (name, address, type, owner) VALUES (?, ?, ?, ?)', [name, address, type, owner]);
     return result.insertId;
@@ -43,6 +48,7 @@ module.exports = {
     getContracts,
     getContractById,
     addContract,
+    getGlobalContract,
     deleteContract,
     updateContract
 };
