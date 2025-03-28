@@ -22,6 +22,11 @@ async function computeGlobalOptimalPlan() {
     }
 }
 
+async function getGlobalPlanHistory() {
+    const { contractAddress } = await getGlobalContract(); // folosește adresa principală
+    return await globalDAO.getGlobalPlanHistory(contractAddress);
+}
+
 async function getGlobalOptimalPlanHour(hour) {
     try {
         let { contractAddress } = await getGlobalContract();
@@ -100,5 +105,6 @@ module.exports = {
     updateNodeResult,
     getBestPosition,
     getFrozenGlobalCost,
-    getBestGlobalPlan
+    getBestGlobalPlan,
+    getGlobalPlanHistory
 };

@@ -8,7 +8,9 @@ router.post('/signup', async (req, res) => {
     
     try {
         const { username, password, address, passphrase } = req.body;
-        if (!username || !password || !address || !passphrase) {
+
+        // ✅ Acum address este opțional!
+        if (!username || !password || !passphrase) {
             return res.status(400).send({ error: 'Missing required fields' });
         }
 

@@ -45,11 +45,17 @@ function listToDTO(list, model)
     return dtoList;
 }
 
+async function getHardhatAccounts() {
+    const accounts = await ethers.getSigners();
+    return accounts.map(signer => signer.address);
+}
+
 module.exports ={
     generateUUID,
     getUnique,
     listToDTO,
     getSignerForUser,
     getDefaultSigner,
-    provider
+    provider,
+    getHardhatAccounts
 }

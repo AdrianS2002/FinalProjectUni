@@ -47,7 +47,7 @@ contract GlobalContract {
     bool public finalized = false;
 
     event NodeResultUpdated(address indexed node, int bestScore);
-    event GlobalPlanComputed(int[] newPlan, uint timestamp);
+    event GlobalPlanComputed(address indexed trigger, int[] newPlan, uint timestamp);
 
     // Nodurile apelează această funcție pentru a-și transmite rezultatul optim.
     // Se folosește un mapping pentru a stoca rezultatele și o listă pentru a itera ulterior.
@@ -120,7 +120,7 @@ contract GlobalContract {
             }
         }
         lastUpdatedTimestamp = block.timestamp;
-        emit GlobalPlanComputed(
+        emit GlobalPlanComputed(msg.sender,
             this.getGlobalOptimalPlanArray(),
             lastUpdatedTimestamp
         );
