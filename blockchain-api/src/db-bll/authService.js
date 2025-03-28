@@ -1,9 +1,16 @@
 const db = require('../db-dao/database');
+const { getHardhatAccounts } = require("../utils/commons");
 
 async function registerUser(username, password, address, passphrase) {
+    let finalAddress = address;
+    if (!finalAddress) {
+        finalAddress = await findFreeAddress(); // ✅ adrese din Hardhat
+        console.log(`📦 Address auto-assigned: ${finalAddress}`);
+    }
+
     const [userResult] = await db.query(
         'INSERT INTO users (address, passphrase, sKey) VALUES (?, ?, ?)', 
-        [address, passphrase, '']
+        [finalAddress, passphrase, '']
     );
     const userId = userResult.insertId;
 
@@ -14,11 +21,30 @@ async function registerUser(username, password, address, passphrase) {
 
     await db.query(
         'INSERT INTO user_role (user, role) VALUES (?, ?)', 
-        [userId, '2']
-    ); // Default role: USER
+        [userId, '2'] // Default: USER
+    );
 
     return userId;
 }
+
+
+async function findFreeAddress() {
+    const allAccounts = await getHardhatAccounts();
+
+    const [used] = await db.query('SELECT address FROM users');
+    
+    // ✅ Filtroază null-uri înainte de .toLowerCase()
+    const usedAddresses = used
+        .map(u => u.address)
+        .filter(addr => addr !== null)
+        .map(addr => addr.toLowerCase());
+
+    const free = allAccounts.find(acc => !usedAddresses.includes(acc.toLowerCase()));
+
+    if (!free) throw new Error("No free address found!");
+    return free;
+}
+
 
 async function loginUser(username, password) {
     const [rows] = await db.query(
@@ -34,5 +60,6 @@ async function loginUser(username, password) {
 
 module.exports = {
     registerUser,
-    loginUser
+    loginUser,
+    findFreeAddress
 };

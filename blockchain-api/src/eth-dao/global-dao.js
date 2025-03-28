@@ -24,6 +24,26 @@ async function computeGlobalOptimalPlan(contract_address, ownerAddress) {
     }
 }
 
+async function getGlobalPlanHistory(contractAddress, fromBlock = 0, toBlock = "latest") {
+    const contract = new ethers.Contract(contractAddress, abi, provider);
+
+    try {
+        const filter = contract.filters.GlobalPlanComputed();
+        const events = await contract.queryFilter(filter, fromBlock, toBlock);
+        
+        return events.map(e => ({
+            plan: e.args.newPlan.map(v => v.toString()),
+            timestamp: e.args.timestamp.toString(),
+            blockNumber: e.blockNumber,
+            txHash: e.transactionHash
+        }));
+    } catch (err) {
+        console.error("❌ Error fetching GlobalPlanComputed events:", err);
+        throw new Error("Could not retrieve event history");
+    }
+}
+
+
 // Funcție pentru a obține valoarea planului global pentru o anumită oră.
 async function getGlobalOptimalPlanHour(contract_address, hour) {
     const contract = new ethers.Contract(contract_address, abi, provider);
@@ -120,5 +140,6 @@ module.exports = {
     updateNodeResult,
     getBestPosition,
     getFrozenGlobalCost,   
-    getBestGlobalPlan      
+    getBestGlobalPlan,
+    getGlobalPlanHistory
 };

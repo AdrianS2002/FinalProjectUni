@@ -20,6 +20,16 @@ router.post('/compute', async (req, res) => {
     }
 });
 
+router.get('/plan-history', async (req, res) => {
+    try {
+        const result = await globalService.getGlobalPlanHistory();
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // ✅ Obține valoarea planului global pentru o anumită oră
 router.get('/optimal-plan-hour/:hour', async (req, res) => {
     try {
