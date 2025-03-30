@@ -1,101 +1,97 @@
-let enums = require('../models/enums');
-let globalDAO = require('../eth-dao/global-dao');
-let accountDao = require('../db-dao/accounts-dao.js');
-let contractDao = require('../db-dao/contracts-dao.js');
+const globalDAO = require('../eth-dao/global-dao');
+const contractDao = require('../db-dao/contracts-dao.js');
+const enums = require('../models/enums');
 
-// 📌 Funcție auxiliară pentru a obține contractul Global asociat unui utilizator
-async function getGlobalContractForUser(username) {
-    let account = await accountDao.QueryAccountAddressByUsername(username);
-    let contract = await contractDao.QueryContractByTypeAndOwner(enums.ContractType.GLOBAL, account.address);
-
+async function getGlobalContract() {
+    const globalOwnerAddress = process.env.GLOBAL_OWNER || "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+    const contract = await contractDao.QueryContractByTypeAndOwner(enums.ContractType.GLOBAL, globalOwnerAddress);
     if (!contract) {
-        throw new Error(`No Global contract found for user: ${username}`);
+        throw new Error(`No GlobalContract found for owner: ${globalOwnerAddress}`);
     }
-    return { contractAddress: contract.address, ownerAddress: account.address };
+    return { contractAddress: contract.address, ownerAddress: globalOwnerAddress };
 }
 
-// 🔹 Calculează planul global optim
-async function computeGlobalOptimalPlan(username) {
+// 🔹 Compute global optimal plan
+async function computeGlobalOptimalPlan() {
     try {
-        let { contractAddress, ownerAddress } = await getGlobalContractForUser(username);
-        let tx = await globalDAO.computeGlobalOptimalPlan(contractAddress, ownerAddress);
-        return Promise.resolve({ transaction: tx });
+        let { contractAddress, ownerAddress } = await getGlobalContract();
+        const tx = await globalDAO.computeGlobalOptimalPlan(contractAddress, ownerAddress);
+        return { transaction: tx };
     } catch (e) {
         return Promise.reject(e);
     }
 }
 
-// 🔹 Obține valoarea planului global pentru o anumită oră
-async function getGlobalOptimalPlanHour(username, hour) {
+async function getGlobalPlanHistory() {
+    const { contractAddress } = await getGlobalContract(); // folosește adresa principală
+    return await globalDAO.getGlobalPlanHistory(contractAddress);
+}
+
+async function getGlobalOptimalPlanHour(hour) {
     try {
-        let { contractAddress } = await getGlobalContractForUser(username);
-        let result = await globalDAO.getGlobalOptimalPlanHour(contractAddress, hour);
-        return Promise.resolve(result);
+        let { contractAddress } = await getGlobalContract();
+        const result = await globalDAO.getGlobalOptimalPlanHour(contractAddress, hour);
+        return result;
     } catch (e) {
         return Promise.reject(e);
     }
 }
 
-// 🔹 Obține întregul plan global optim
-async function getGlobalOptimalPlanArray(username) {
+async function getGlobalOptimalPlanArray() {
     try {
-        let { contractAddress } = await getGlobalContractForUser(username);
-        let result = await globalDAO.getGlobalOptimalPlanArray(contractAddress);
-        return Promise.resolve(result);
+        let { contractAddress } = await getGlobalContract();
+        const result = await globalDAO.getGlobalOptimalPlanArray(contractAddress);
+        return result;
     } catch (e) {
         return Promise.reject(e);
     }
 }
 
-// 🔹 Obține timestamp-ul global actualizat
-async function getLastUpdatedTimestamp(username) {
+async function getLastUpdatedTimestamp() {
     try {
-        let { contractAddress } = await getGlobalContractForUser(username);
-        let result = await globalDAO.getLastUpdatedTimestamp(contractAddress);
-        return Promise.resolve(result);
+        let { contractAddress } = await getGlobalContract();
+        const result = await globalDAO.getLastUpdatedTimestamp(contractAddress);
+        return result;
     } catch (e) {
         return Promise.reject(e);
     }
 }
 
-// 🔹 Actualizează rezultatul unui nod în GlobalContract
-async function updateNodeResult(username, newPosition, newScore, newFlexibilityWeight) {
+async function updateNodeResult(newPosition, newScore, newFlexibilityWeight) {
     try {
-        let { contractAddress, ownerAddress } = await getGlobalContractForUser(username);
-        let tx = await globalDAO.updateNodeResult(contractAddress, newPosition, newScore, newFlexibilityWeight, ownerAddress);
-        return Promise.resolve({ transaction: tx });
+        let { contractAddress, ownerAddress } = await getGlobalContract();
+        const tx = await globalDAO.updateNodeResult(contractAddress, newPosition, newScore, newFlexibilityWeight, ownerAddress);
+        return { transaction: tx };
     } catch (e) {
         return Promise.reject(e);
     }
 }
 
-// 🔹 Obține cea mai bună poziție pentru un nod
-async function getBestPosition(username, nodeAddress) {
+async function getBestPosition(nodeAddress) {
     try {
-        let { contractAddress } = await getGlobalContractForUser(username);
-        let result = await globalDAO.getBestPosition(contractAddress, nodeAddress);
-        return Promise.resolve(result);
+        let { contractAddress } = await getGlobalContract();
+        const result = await globalDAO.getBestPosition(contractAddress, nodeAddress);
+        return result;
     } catch (e) {
         return Promise.reject(e);
     }
 }
 
-async function getFrozenGlobalCost(username) {
+async function getFrozenGlobalCost() {
     try {
-        let { contractAddress } = await getGlobalContractForUser(username);
-        let result = await globalDAO.getFrozenGlobalCost(contractAddress);
-        return Promise.resolve(result);
+        let { contractAddress } = await getGlobalContract();
+        const result = await globalDAO.getFrozenGlobalCost(contractAddress);
+        return result;
     } catch (e) {
         return Promise.reject(e);
     }
 }
 
-// ✅ 🔹 Obține cel mai bun plan global
-async function getBestGlobalPlan(username) {
+async function getBestGlobalPlan() {
     try {
-        let { contractAddress } = await getGlobalContractForUser(username);
-        let result = await globalDAO.getBestGlobalPlan(contractAddress);
-        return Promise.resolve(result);
+        let { contractAddress } = await getGlobalContract();
+        const result = await globalDAO.getBestGlobalPlan(contractAddress);
+        return result;
     } catch (e) {
         return Promise.reject(e);
     }
@@ -108,6 +104,7 @@ module.exports = {
     getLastUpdatedTimestamp,
     updateNodeResult,
     getBestPosition,
-    getFrozenGlobalCost,   
-    getBestGlobalPlan 
+    getFrozenGlobalCost,
+    getBestGlobalPlan,
+    getGlobalPlanHistory
 };

@@ -5,32 +5,56 @@ let logger = require('morgan');
 let mysql = require('mysql2');
 let cors = require('cors');
 let createError = require('http-errors');
-let bodyParser = require('body-parser');
 const { Web3 } = require('web3');
 const { ethers } = require('ethers');
 const swaggerUI = require('swagger-ui-express');
+
+
 //controllere
 let indexRouter = require('./src/routes/index');
 let testRouter = require('./src/routes/test-contract-route');
 let chainRouter = require('./src/routes/chain-route');
+const authRoutes = require('./src/routes/auth-routes');
+const contractRoutes = require('./src/routes/contract-routes');
+const userRoutes = require('./src/routes/user-routes');
+const nodesRouter = require('./src/routes/eth-routes/node-routes');
+const globalRoutes = require('./src/routes/eth-routes/global-routes');
+
 
 let app = express();
-app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');  //jade era inainte
 app.disable('etag');
 app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(cors());
 app.use(cookieParser());
+
+app.use((req, res, next) => {
+    console.log("==== New request received ====");
+    console.log("Method:", req.method);
+    console.log("URL:", req.originalUrl);
+    console.log("Headers:", req.headers);
+    console.log("Body:", req.body);
+    next();
+});
+
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 let baseURL = '/blockchain-api';
 
-app.use(baseURL+'/', indexRouter);
-// app.use(baseURL+'/chain', chainRouter);
-app.use(baseURL+'/test', testRouter);
+app.use(baseURL + '/', indexRouter);
+app.use(baseURL + '/chain', chainRouter);
+app.use(baseURL + '/test', testRouter);
+app.use(baseURL + '/auth', authRoutes);
+app.use(baseURL + '/contracts', contractRoutes);
+app.use(baseURL + '/users', userRoutes);
+app.use(baseURL + '/nodes', nodesRouter);
+app.use(baseURL + '/global', globalRoutes);
+
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -42,9 +66,13 @@ app.use(function (err, req, res, next) {
     console.log(err);
     err.path = req.path;
     err.timestamp = Date.now();
-    res.status(err.status);
+    res.status(err.status || 500);
     res.send(err);
 });
+
+
+
+
 //posibil si port
 let host = 'localhost';
 let user = 'root';
@@ -91,6 +119,7 @@ handleDisconnect();
 global.db = db;
 
 let ip = 'http://localhost:8545';  //blockchain
+global.web3 = new Web3(ip); //adaugat 22.03.2025
 
 global.provider = new ethers.JsonRpcProvider(ip);
 global.ethers = ethers;

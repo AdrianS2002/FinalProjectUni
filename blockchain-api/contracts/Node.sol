@@ -394,12 +394,6 @@ contract Node {
         return objectiveFunctionFrozen(personalBestPosition);
     }
 
-    // changed: Funcția applyFinalPlan nu mai modifică poziția sau costul,
-    // păstrând snapshot-ul din iterația optimă.
-    function applyFinalPlan() external {
-        // Doar se poate seta un flag de finalizare dacă este nevoie.
-    }
-
     function getPosition() public view returns (int[] memory) {
         int[] memory copy = new int[](position.length);
         for (uint i = 0; i < position.length; i++) {
