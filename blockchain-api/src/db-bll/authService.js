@@ -9,18 +9,23 @@ async function registerUser(username, password, address, passphrase) {
     }
 
     const [userResult] = await db.query(
+
         'INSERT INTO users (address, passphrase, sKey) VALUES (?, ?, ?)',
         [finalAddress, passphrase, '']
     );
     const userId = userResult.insertId;
 
     await db.query(
+
         'INSERT INTO credentials (user_id, username, password) VALUES (?, ?, ?)',
+
         [userId, username, password]
     );
 
     await db.query(
+
         'INSERT INTO user_role (user, role) VALUES (?, ?)',
+
         [userId, '2'] // Default: USER
     );
 
@@ -32,6 +37,8 @@ async function findFreeAddress() {
     const allAccounts = await getHardhatAccounts();
 
     const [used] = await db.query('SELECT address FROM users');
+
+
     const usedAddresses = used
         .map(u => u.address)
         .filter(addr => addr !== null)
@@ -46,6 +53,7 @@ async function findFreeAddress() {
 
 async function loginUser(username, password) {
     const [rows] = await db.query(
+
       'SELECT c.password, c.user_id FROM credentials c WHERE c.username = ?',
       [username]
     );
@@ -65,6 +73,7 @@ async function loginUser(username, password) {
     const roles = roleRows.map(r => r.role);
     return { userId, roles };
   }
+
 
 module.exports = {
     registerUser,

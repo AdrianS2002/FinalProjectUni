@@ -79,6 +79,7 @@ router.get('/objectiveFunction/:username', async (req, res) => {  //astea nu mer
         res.status(500).json({ error: err.message });
     }
 });
+
 router.get('/effectiveTariff/:username/:hour/:consumption', async (req, res) => {
     try {
          const hour = parseInt(req.params.hour, 10);
@@ -89,4 +90,5 @@ router.get('/effectiveTariff/:username/:hour/:consumption', async (req, res) => 
          res.status(500).json({ error: err.message });
     }
 });
+
 module.exports = router;

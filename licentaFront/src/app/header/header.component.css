@@ -11,6 +11,7 @@
   width: 100%;
   height: 60px;
   z-index:6;
+
 }
 
 .logo-img {
@@ -39,6 +40,7 @@
   color: var(--button-bg);
   background: rgba(255, 255, 255, 0.1);
 }
+
 
 
 .dropdown-content .dropdown-item {
