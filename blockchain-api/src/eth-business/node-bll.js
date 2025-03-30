@@ -155,6 +155,16 @@ async function getObjectiveFunctionResult(username) {
 //     }
 // }
 
+async function getEffectiveTariff(username, hour, consumption) {
+    try {
+        let { contractAddress } = await getNodeContractForUser(username);
+        let effectiveTariff = await nodeDAO.getEffectiveTariff(contractAddress, hour, consumption);
+        return Promise.resolve({ effectiveTariff });
+    } catch (e) {
+        return Promise.reject(e);
+    }
+}
+
 module.exports = {
     updateVelocityAndPosition,
     getPosition,
@@ -163,6 +173,7 @@ module.exports = {
     getPersonalBestPosition,
     updateBestPositions,
     getObjectiveFunctionResult,
-    getFrozenCost
+    getFrozenCost,
+    getEffectiveTariff
    // getNodePenalty
 };

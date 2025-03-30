@@ -30,4 +30,19 @@ router.delete('/:id', async (req, res) => {
     res.send({ message: 'Contract deleted' });
 });
 
+
+router.put('/:id/owner', async (req, res) => {
+    try {
+      const { newOwner } = req.body;
+      if (!newOwner) {
+        return res.status(400).json({ error: "Missing new owner address" });
+      }
+      await contractService.updateContractOwner(req.params.id, newOwner);
+      res.json({ message: "Contract owner updated" });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+
 module.exports = router;

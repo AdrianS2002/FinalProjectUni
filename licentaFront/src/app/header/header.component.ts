@@ -1,20 +1,59 @@
-import { NgFor, NgIf } from '@angular/common';
-import { Component } from '@angular/core';
+
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { TransitionService } from '../services/transition.service';
+import { NgIf } from '@angular/common';
+import { AuthService } from '../services/auth.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-header',
+  templateUrl: './header.component.html',
   standalone: true,
   imports: [NgIf],
-  templateUrl: './header.component.html',
-  styleUrl: './header.component.css'
+  styleUrls: ['./header.component.css'] 
 })
-export class HeaderComponent {
-  isLoggedIn = false;
+export class HeaderComponent implements OnInit, OnDestroy {
+  isLoggedIn = false; 
+  private userSub!: Subscription;
 
-  navigateToHome() {
+  constructor(private router: Router, private transitionService: TransitionService, private authService: AuthService) {}
+
+  ngOnInit(): void {
+    this.userSub = this.authService.user$.subscribe(user => {
+      this.isLoggedIn = !!user; // true dacă există user, false dacă nu
+    });
   }
-  navigateToOptimization(){}
-  navigateToContact(){}
-  navigateToLogin(){}
-  logout(){}
+
+  ngOnDestroy(): void {
+    this.userSub.unsubscribe();
+  }
+
+  navigateWithTransition(path: string): void {
+    this.transitionService.animateTransition().then(() => {
+      this.router.navigateByUrl(path);
+    });
+  }
+
+  navigateToHome(): void {
+    this.navigateWithTransition('/home'); 
+  }
+
+  navigateToOptimization(): void {
+    this.navigateWithTransition('/optimization');
+  }
+
+  navigateToAbout(): void {
+    this.navigateWithTransition('/about');
+  }
+
+  navigateToLogin(): void {
+    this.navigateWithTransition('/login');
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.navigateToLogin();
+    this.isLoggedIn = false;
+  }
 }

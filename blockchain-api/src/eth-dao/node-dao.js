@@ -143,6 +143,17 @@ async function getFrozenCost(contract_address) {
     }
 }
 
+async function getEffectiveTariff(contract_address, hour, consumption) {
+    const contract = new ethers.Contract(contract_address, abi, provider);
+    try {
+        let result = await contract.getEffectiveTariff(hour, consumption);
+        return result;
+    } catch (e) {
+        console.log(e);
+        return new EthErrors.MethodCallError("Node", "getEffectiveTariff", "getEffectiveTariff");
+    }
+}
+
 module.exports = {
     updateVelocityAndPosition,
     getPosition,
@@ -152,5 +163,6 @@ module.exports = {
     getLastKnownGlobalTimestamp,
     getLastUpdatedTimestamp,
     getObjectiveFunctionResult,
-    getFrozenCost
+    getFrozenCost,
+    getEffectiveTariff
 };

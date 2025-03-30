@@ -183,7 +183,8 @@ async function main() {
             console.log(`✅ Contractul pentru Node ${i + 1} verificat on-chain la adresa ${node.target}`);
         }
 
-        const ownerAddress = await getAddressByUsername('dsrl'); 
+        const ownerAddress = "0x0000000000000000000000000000000000000000"; 
+
         // Salvează nodul în baza de date
         InsertContract(`Node ${i + 1}`, node.target, ownerAddress , "Node");
     }
@@ -191,10 +192,11 @@ async function main() {
     // Save contracts in database using .target
     InsertContract("GlobalContract", globalContract.target, accounts[0].address, "GlobalContract");
 
-    const TestContract = await ethers.getContractFactory("TestContract");
-    const testContract = await TestContract.connect(accounts[1]).deploy(100);
-    await testContract.waitForDeployment();
-    await InsertContractWithUUID("d00597e0-2e5c-4487-ac6c-72866ad3514c", "TestContract", testContract.target, accounts[1].address, "TestContract");
+  //  const TestContract = await ethers.getContractFactory("TestContract");
+   // const testContract = await TestContract.connect(accounts[1]).deploy(100);
+    //await testContract.waitForDeployment();
+   // await InsertContractWithUUID("d00597e0-2e5c-4487-ac6c-72866ad3514c", "TestContract", testContract.target, accounts[1].address, "TestContract");
+
 
     console.log("===========================================");
     db.query('SELECT * FROM contracts', (err, results) => {

@@ -80,4 +80,15 @@ router.get('/objectiveFunction/:username', async (req, res) => {  //astea nu mer
     }
 });
 
+router.get('/effectiveTariff/:username/:hour/:consumption', async (req, res) => {
+    try {
+         const hour = parseInt(req.params.hour, 10);
+         const consumption = parseInt(req.params.consumption, 10);
+         const data = await nodeService.getEffectiveTariff(req.params.username, hour, consumption);
+         res.json(stringifyBigInt(data));
+    } catch (err) {
+         res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

@@ -9,18 +9,23 @@ async function registerUser(username, password, address, passphrase) {
     }
 
     const [userResult] = await db.query(
-        'INSERT INTO users (address, passphrase, sKey) VALUES (?, ?, ?)', 
+
+        'INSERT INTO users (address, passphrase, sKey) VALUES (?, ?, ?)',
         [finalAddress, passphrase, '']
     );
     const userId = userResult.insertId;
 
     await db.query(
-        'INSERT INTO credentials (user_id, username, password) VALUES (?, ?, ?)', 
+
+        'INSERT INTO credentials (user_id, username, password) VALUES (?, ?, ?)',
+
         [userId, username, password]
     );
 
     await db.query(
-        'INSERT INTO user_role (user, role) VALUES (?, ?)', 
+
+        'INSERT INTO user_role (user, role) VALUES (?, ?)',
+
         [userId, '2'] // Default: USER
     );
 
@@ -32,8 +37,8 @@ async function findFreeAddress() {
     const allAccounts = await getHardhatAccounts();
 
     const [used] = await db.query('SELECT address FROM users');
-    
-    // ✅ Filtroază null-uri înainte de .toLowerCase()
+
+
     const usedAddresses = used
         .map(u => u.address)
         .filter(addr => addr !== null)
@@ -48,15 +53,27 @@ async function findFreeAddress() {
 
 async function loginUser(username, password) {
     const [rows] = await db.query(
-        'SELECT c.password, c.user_id FROM credentials c WHERE c.username = ?', 
-        [username]
+
+      'SELECT c.password, c.user_id FROM credentials c WHERE c.username = ?',
+      [username]
     );
     if (rows.length === 0) throw new Error('User not found');
-
     if (rows[0].password !== password) throw new Error('Invalid password');
+    const userId = rows[0].user_id;
+  
+    // Alăturăm tabela user_role cu tabela roles pentru a obține numele rolurilor
+    const [roleRows] = await db.query(
+      `SELECT r.role 
+       FROM user_role ur 
+       JOIN roles r ON ur.role = r.id 
+       WHERE ur.user = ?`,
+      [userId]
+    );
+    
+    const roles = roleRows.map(r => r.role);
+    return { userId, roles };
+  }
 
-    return { userId: rows[0].user_id };
-}
 
 module.exports = {
     registerUser,

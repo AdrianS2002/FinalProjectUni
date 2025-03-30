@@ -1,23 +1,29 @@
 <div class="login-background">
-    <div class="login-box">
-        <p>Login</p>
-        <form>
-          <div class="user-box">
-            <input required="" name="" type="text">
-            <label>Email</label>
-          </div>
-          <div class="user-box">
-            <input required="" name="" type="password">
-            <label>Password</label>
-          </div>
-          <a (click)="toHome()">
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            Login
-          </a>
-        </form>
-        <p>Don't have an account? <a (click)="toSignUp()" class="a2">Sign up!</a></p>
+  <div class="login-box">
+    <p>Login</p>
+
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+    <form (ngSubmit)="login()" #loginForm="ngForm">
+      <div class="user-box">
+        <input required name="username" type="text" [(ngModel)]="username">
+        <label>Username</label>
       </div>
+      <div class="user-box">
+        <input required name="password" type="password" [(ngModel)]="password">
+        <label>Password</label>
+      </div>
+      <button type="submit">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        Login
+      </button>
+    </form>
+    <p style="color: #00ffc8;">Don't have an account? <a (click)="toSignUp()" class="a2" >Sign up!</a></p>
+    <div *ngIf="isLoading" class="spinner"></div>
+  </div>
+
 </div>
