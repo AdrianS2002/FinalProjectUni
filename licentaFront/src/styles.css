@@ -1,4 +1,5 @@
 :root {
+
   --font-primary: 'Poppins', sans-serif;
 
   --primary-bg: #0c1b2a;
@@ -126,6 +127,7 @@ button:disabled {
       transform: rotate(360deg);
   }
 }
+
 
 html,
 body {

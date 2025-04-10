@@ -43,6 +43,7 @@ async function updateContract(id, data) {
     );
 }
 
+
 async function updateContractOwner(id, newOwner) {
     await db.query(
       'UPDATE contracts SET owner = ? WHERE id = ?',
@@ -58,6 +59,8 @@ module.exports = {
     addContract,
     getGlobalContract,
     deleteContract,
+
     updateContract,
     updateContractOwner
+
 };

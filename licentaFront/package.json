@@ -18,11 +18,13 @@
     "@angular/platform-browser": "^18.2.0",
     "@angular/platform-browser-dynamic": "^18.2.0",
     "@angular/router": "^18.2.0",
+
     "@ng-select/ng-select": "^13.0.1",
     "chart.js": "^3.9.1",
     "chartjs-chart-matrix": "^1.1.0",
     "gsap": "^3.12.7",
     "ng2-charts": "^3.0.1",
+
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.10"
