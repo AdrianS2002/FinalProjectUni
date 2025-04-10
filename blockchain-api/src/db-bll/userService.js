@@ -76,10 +76,23 @@ async function deleteUser(id) {
     await db.query('DELETE FROM users WHERE id=?', [id]);
 }
 
+async function getConsumptionPointByUsername(username) {
+    const [rows] = await db.query(`
+        SELECT c.id, c.name, c.address, c.type
+        FROM credentials cr
+        JOIN users u ON cr.user_id = u.id
+        JOIN contracts c ON u.address = c.owner
+        WHERE cr.username = ? AND c.type = 'Node'
+    `, [username]);
+
+    return rows[0] || null;
+}
+
 module.exports = {
     getAllUsers,
     getUserById,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    getConsumptionPointByUsername
 };

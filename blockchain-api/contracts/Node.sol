@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 /* INTERFAȚĂ PENTRU GLOBAL CONTRACT */
@@ -187,7 +187,7 @@ contract Node {
         return totalCost;
     }
 
-    // Funcția de calcul a tarifului efectiv (cu discount)
+    // Funcția de calcul a tarifului efectiv (cu discount)  Ar fi o idee sa le fac variabile in functie de ore
     function getEffectiveTariff(
         uint hour,
         int consumption
@@ -297,8 +297,6 @@ contract Node {
         }
     }
 
-
-
     function objectiveFunctionFrozen(
         int[] memory pos
     ) public view returns (int) {
@@ -400,5 +398,33 @@ contract Node {
             copy[i] = position[i];
         }
         return copy;
+    }
+
+    function getTariff() public view returns (int[] memory) {
+        return tariff;
+    }
+
+    function getCapacity() public view returns (uint[] memory) {
+        return capacity;
+    }
+
+    function getBatteryCharge() public view returns (uint[] memory) {
+        return batteryCharge;
+    }
+
+    function getBatteryCapacity() public view returns (uint[] memory) {
+        return batteryCapacity;
+    }
+
+    function getRenewableGeneration() public view returns (uint[] memory) {
+        return renewableGeneration;
+    }
+
+    function getFlexibilityAbove() public view returns (uint[] memory) {
+        return flexibilityAbove;
+    }
+
+    function getFlexibilityBelow() public view returns (uint[] memory) {
+        return flexibilityBelow;
     }
 }

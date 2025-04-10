@@ -3,10 +3,10 @@ import { LoginComponent } from './login/login.component';
 import { SignupComponent } from './signup/signup.component';
 import { HomeComponent } from './home/home.component';
 import { LoadingSpinnerChartComponent } from './loading-spinner-chart/loading-spinner-chart.component';
-
-import { AboutComponent } from '../about/about.component';
+import { AboutComponent } from './about/about.component';
 import { AuthGuard } from './auth.guard';
-import { OptimizationComponent } from '../optimization/optimization.component';
+import { OptimizationComponent } from './optimization/optimization.component';
+import { ManageUsersComponent } from './manage-users/manage-users.component';
 
 
 export const routes: Routes = [
@@ -17,6 +17,8 @@ export const routes: Routes = [
 
     {path: 'about', component: AboutComponent},
     {path: 'optimization', component: OptimizationComponent, canActivate:[AuthGuard]},
+
+    {path: 'manage-users', component: ManageUsersComponent, canActivate:[AuthGuard]},
 
     { path: '', redirectTo: 'login', pathMatch: 'full' },
     {path: '**', redirectTo: 'login'}

@@ -1,7 +1,7 @@
 const { ethers } = require("ethers");
 const abi = require('../../artifacts/contracts/Node.sol/Node.json').abi;
 const bin_data = require('../../artifacts/contracts/Node.sol/Node.json').bytecode;
-
+const { loadNodeContract } = require('../utils/commons');
 let ErrorHandling = require('../models/error-handling');
 const { getSignerForUser } = require('../utils/commons');
 let EthErrors = require('../models/eth-errors.js');
@@ -12,6 +12,16 @@ let EthErrors = require('../models/eth-errors.js');
 // });
 const { provider } = require('../utils/commons');
 
+
+function convertResultToArray(result) {
+    
+    if (!result || typeof result !== 'object' || !result.length) return result;
+    try {
+        return [...result];
+    } catch (e) {
+        return Array.from(result);
+    }
+}
 
 // ✅ Actualizează viteza și poziția (doar dacă timestamp-ul global s-a schimbat)
 async function updateVelocityAndPosition(contract_address, ownerAddress, global_contract_address) {
@@ -61,14 +71,17 @@ async function getPosition(contract_address) {
 async function getObjectiveFunctionResult(contract_address, position) {
     const contract = new ethers.Contract(contract_address, abi, provider);
     try {
-        let result = await contract.objectiveFunction(position); // ⚠️ Asigură-te că position e corect
+        // 🔧 Convertim Result într-un array normal
+        const positionArray = Array.from(position);
+        console.log("📤 Sending position to contract.objectiveFunction:", positionArray);
+
+        let result = await contract.objectiveFunction(positionArray);
         return result;
     } catch (e) {
-        console.log(e);
+        console.log("❌ Eroare în getObjectiveFunctionResult:", e);
         return new EthErrors.MethodCallError("Node", "getObjectiveFunctionResult", "objectiveFunction");
     }
 }
-
 
 // ✅ Obține timestamp-ul global cunoscut de nod
 async function getLastKnownGlobalTimestamp(contract_address) {
@@ -152,6 +165,98 @@ async function getEffectiveTariff(contract_address, hour, consumption) {
         console.log(e);
         return new EthErrors.MethodCallError("Node", "getEffectiveTariff", "getEffectiveTariff");
     }
+
+    
+    
+}
+
+async function getTariff(contractAddress) {
+    try {
+        const contract = loadNodeContract(contractAddress);
+        const result = await contract.getTariff(); 
+        return result;
+    } catch (e) {
+        console.error("❌ Eroare în getTariff:", e);
+        throw e;
+    }
+}
+async function getCapacity(contractAddress) {
+    try{
+        const contract = loadNodeContract(contractAddress);
+        const result = await contract.getCapacity(); 
+        return result;
+    }
+    catch (e) {
+        console.error("❌ Eroare în getCapacity:", e);
+        throw e;
+    }
+}
+
+async function getBatteryCharge(contractAddress) {
+    try{
+        const contract = loadNodeContract(contractAddress);
+        const result = await contract.getBatteryCharge(); 
+        return result;
+    }
+    catch (e) {
+        console.error("❌ Eroare în getBatteryCharge:", e);
+        throw e;
+    }
+}
+
+async function getBatteryCapacity(contractAddress) {
+    try{
+        const contract = loadNodeContract(contractAddress);
+        const result = await contract.getBatteryCapacity(); 
+        return result;
+    }
+    catch (e) {
+        console.error("❌ Eroare în getBatteryCapacity:", e);
+        throw e;
+    }
+}
+
+async function getRenewableGeneration(contractAddress) {
+    try {
+      console.log(`🔌 [DAO] Loading contract at address: ${contractAddress}`);
+      const contract = loadNodeContract(contractAddress);
+  
+      const result = await contract.getRenewableGeneration();
+      console.log("📊 [DAO] Raw renewable generation (Result):", result);
+  
+      const converted = Array.from(result).map(Number); // sau convertResultToArray(result)
+      console.log("✅ [DAO] Converted renewable generation:", converted);
+  
+      return converted;
+    } catch (e) {
+      console.error("❌ [DAO] Error in getRenewableGeneration:", e);
+      throw e;
+    }
+  }
+  
+
+async function getFlexibilityAbove(contractAddress) {
+    try{
+        const contract = loadNodeContract(contractAddress);
+        const result = await contract.getFlexibilityAbove(); 
+        return convertResultToArray(result);
+    }
+    catch (e) {
+        console.error("❌ Eroare în getFlexibilityAbove:", e);
+        throw e;
+    }
+}
+
+async function getFlexibilityBelow(contractAddress) {
+    try{
+        const contract = loadNodeContract(contractAddress);
+        let result = await contract.getFlexibilityBelow();
+        return convertResultToArray(result);
+    }
+    catch (e) {
+        console.error("❌ Eroare în getFlexibilityBelow:", e);
+        throw e;
+    }
 }
 
 module.exports = {
@@ -164,5 +269,12 @@ module.exports = {
     getLastUpdatedTimestamp,
     getObjectiveFunctionResult,
     getFrozenCost,
-    getEffectiveTariff
+    getEffectiveTariff,
+    getTariff,
+    getCapacity,
+    getBatteryCharge,
+    getBatteryCapacity,
+    getRenewableGeneration,
+    getFlexibilityAbove,
+    getFlexibilityBelow
 };
