@@ -1,0 +1,52 @@
+.manage-users-wrapper {
+    padding: 2rem;
+    font-family: var(--font-primary);
+    color: var(--text-color);
+  }
+  
+  h1 {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .users-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--secondary-bg);
+    border-radius: var(--border-radius);
+    animation: fadeInUp 4s ease both;
+    overflow: hidden;
+  }
+  
+  .users-table th,
+  .users-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+  }
+  
+  .users-table th {
+    background-color: rgba(0, 255, 200, 0.05);
+    color: var(--text-color);
+  }
+  
+  .users-table tr:hover {
+    background-color: rgba(0, 255, 200, 0.08);
+  }
+  
+
+    
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(90px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .selection {
+    cursor: pointer;
+  }
+  

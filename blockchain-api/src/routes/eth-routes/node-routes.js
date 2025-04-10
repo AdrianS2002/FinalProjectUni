@@ -62,7 +62,7 @@ router.post('/updateVelocity/:username', async (req, res) => {
 });
 
 
-router.get('/frozenCost/:username', async (req, res) => {   //astea nu merg 
+router.get('/frozenCost/:username', async (req, res) => {   
     try {
         const data = await nodeService.getFrozenCost(req.params.username);
         res.json((stringifyBigInt(data)));
@@ -71,7 +71,7 @@ router.get('/frozenCost/:username', async (req, res) => {   //astea nu merg
     }
 });
 
-router.get('/objectiveFunction/:username', async (req, res) => {  //astea nu merg
+router.get('/objectiveFunction/:username', async (req, res) => {  
     try {
         const data = await nodeService.getObjectiveFunctionResult(req.params.username);
         res.json((stringifyBigInt(data) ));
@@ -83,10 +83,74 @@ router.get('/effectiveTariff/:username/:hour/:consumption', async (req, res) => 
     try {
          const hour = parseInt(req.params.hour, 10);
          const consumption = parseInt(req.params.consumption, 10);
-         const data = await nodeService.getEffectiveTariff(req.params.username, hour, consumption);
+         const data = await nodeService.getEffectivtariffeTariff(req.params.username, hour, consumption);
          res.json(stringifyBigInt(data));
     } catch (err) {
          res.status(500).json({ error: err.message });
     }
 });
+
+router.get('/tariff/:username', async (req, res) => {
+    try {
+      const data = await nodeService.getTariff(req.params.username);
+      res.json(stringifyBigInt(data));
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+  
+  router.get('/capacity/:username', async (req, res) => {
+    try {
+      const data = await nodeService.getCapacity(req.params.username);
+      res.json(stringifyBigInt(data));
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+  
+  router.get('/batteryCharge/:username', async (req, res) => {
+    try {
+      const data = await nodeService.getBatteryCharge(req.params.username);
+      res.json(stringifyBigInt(data));
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+  
+  router.get('/batteryCapacity/:username', async (req, res) => {
+    try {
+      const data = await nodeService.getBatteryCapacity(req.params.username);
+      res.json(stringifyBigInt(data));
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+  
+  router.get('/renewableGeneration/:username', async (req, res) => {
+    try {
+      const data = await nodeService.getRenewableGeneration(req.params.username);
+      res.json(stringifyBigInt(data));
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+  
+  router.get('/flexibilityAbove/:username', async (req, res) => {
+    try {
+      const data = await nodeService.getFlexibilityAbove(req.params.username);
+      res.json(stringifyBigInt(data));
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+  
+  router.get('/flexibilityBelow/:username', async (req, res) => {
+    try {
+      const data = await nodeService.getFlexibilityBelow(req.params.username);
+      res.json(stringifyBigInt(data));
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+  
 module.exports = router;

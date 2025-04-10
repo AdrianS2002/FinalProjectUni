@@ -32,7 +32,7 @@ async function getNodeContractForUser(username) {
 async function updateVelocityAndPosition(username, global_contract_address) {
     try {
         let { contractAddress, ownerAddress } = await getNodeContractForUser(username);
-        
+
         // Obținem timestamp-urile pentru sincronizare
         let lastKnownGlobalTimestamp = await nodeDAO.getLastKnownGlobalTimestamp(contractAddress);
         let lastUpdatedTimestamp = await globalContractService.getLastUpdatedTimestamp(global_contract_address);
@@ -126,20 +126,24 @@ async function updateBestPositions(username) {
 async function getFrozenCost(username) {
     try {
         let { contractAddress } = await getNodeContractForUser(username);
+        console.log("🧪 Contract address for getFrozenCost:", contractAddress);
+
         let frozenCost = await nodeDAO.getFrozenCost(contractAddress);
+        console.log("🧊 Frozen cost from contract:", frozenCost);
+
         return Promise.resolve({ frozenCost });
     } catch (e) {
+        console.error("❌ Error in getFrozenCost BLL:", e);
         return Promise.reject(e);
     }
 }
 
 
-
 async function getObjectiveFunctionResult(username) {
     try {
         let { contractAddress } = await getNodeContractForUser(username);
-        let positionObj = await nodeDAO.getPosition(contractAddress); 
-        let result = await nodeDAO.getObjectiveFunctionResult(contractAddress, positionObj.position);
+        let positionObj = await nodeDAO.getPosition(contractAddress);
+        let result = await nodeDAO.getObjectiveFunctionResult(contractAddress, Array.from(positionObj.position));
         return Promise.resolve({ result });
     } catch (e) {
         return Promise.reject(e);
@@ -165,6 +169,100 @@ async function getEffectiveTariff(username, hour, consumption) {
     }
 }
 
+async function getTariff(username) {
+    try {
+        const { contractAddress } = await getNodeContractForUser(username);
+        console.log("📦 [getTariff] Contract address for", username, ":", contractAddress);
+
+        const result = await nodeDAO.getTariff(contractAddress);
+        console.log("📊 Tariff data:", result);
+
+        return Promise.resolve({ tariff: result });
+    } catch (e) {
+        console.error("❌ Error in getTariff:", e);
+        return Promise.reject(e);
+    }
+}
+
+
+async function getCapacity(username) {
+    try {
+        const { contractAddress } = await getNodeContractForUser(username);
+        const result = await nodeDAO.getCapacity(contractAddress);
+        return Promise.resolve({ capacity: result });
+    }
+    catch (e) {
+        console.error("❌ Error in getCapacity:", e);
+        return Promise.reject(e);
+    }
+}
+
+async function getBatteryCharge(username) {
+    try {
+        let { contractAddress } = await getNodeContractForUser(username);
+        let result = await nodeDAO.getBatteryCharge(contractAddress);
+        return Promise.resolve(result);
+    }
+    catch (e) {
+        console.error("❌ Error in getBatteryCharge:", e);
+        return Promise.reject(e);
+    }
+}
+
+async function getBatteryCapacity(username) {
+    try{
+        const { contractAddress } = await getNodeContractForUser(username);
+        const result = await nodeDAO.getBatteryCapacity(contractAddress);
+        return Promise.resolve({ batteryCapacity: result });
+    }
+    catch (e) {
+        console.error("❌ Error in getBatteryCapacity:", e);
+        return Promise.reject(e);
+    }
+}
+
+async function getRenewableGeneration(username) {
+    try {
+      console.log(`🔍 [BLL] Looking for contract for user: ${username}`);
+      const { contractAddress } = await getNodeContractForUser(username);
+      console.log(`✅ [BLL] Contract address for renewableGeneration: ${contractAddress}`);
+  
+      const result = await nodeDAO.getRenewableGeneration(contractAddress);
+      console.log("📈 [BLL] Renewable generation from DAO:", result);
+  
+      return Promise.resolve({ renewableGeneration: result });
+    } catch (e) {
+      console.error("❌ [BLL] Error in getRenewableGeneration:", e);
+      return Promise.reject(e);
+    }
+  }
+  
+
+async function getFlexibilityAbove(username) {
+   try{
+        let { contractAddress } = await getNodeContractForUser(username);
+        let result = await nodeDAO.getFlexibilityAbove(contractAddress);
+        return Promise.resolve(result);
+    }
+    catch (e) {
+        console.error("❌ Error in getFlexibilityAbove:", e);
+        return Promise.reject(e);
+    }
+}
+
+async function getFlexibilityBelow(username) {
+    try{
+        let { contractAddress } = await getNodeContractForUser(username);
+        let result = await nodeDAO.getFlexibilityBelow(contractAddress);
+        return Promise.resolve(result);
+    }
+    catch (e) {
+        console.error("❌ Error in getFlexibilityBelow:", e);
+        return Promise.reject(e);
+    }
+}
+
+
 module.exports = {
     updateVelocityAndPosition,
     getPosition,
@@ -174,6 +272,13 @@ module.exports = {
     updateBestPositions,
     getObjectiveFunctionResult,
     getFrozenCost,
-    getEffectiveTariff
-   // getNodePenalty
+    getEffectiveTariff,
+    // getNodePenalty
+    getTariff,
+    getCapacity,
+    getBatteryCharge,
+    getBatteryCapacity,
+    getRenewableGeneration,
+    getFlexibilityAbove,
+    getFlexibilityBelow
 };

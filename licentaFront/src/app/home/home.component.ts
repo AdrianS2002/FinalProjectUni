@@ -5,6 +5,7 @@ import { ChartType } from 'chart.js';
 import { Router } from '@angular/router';
 import { TransitionService } from '../services/transition.service';
 import { AuthService } from '../services/auth.service';
+import { UsersService } from '../services/users.service';
 
 @Component({
   selector: 'app-home',
@@ -16,10 +17,28 @@ import { AuthService } from '../services/auth.service';
 export class HomeComponent implements AfterViewInit{
 
   public userRole: 'MANAGER' | 'USER' | null = null;
+  public username: string | null = null;
+  public userConsumptionPoint: any = null;
 
-  constructor(private router:Router, private transitionService: TransitionService, private authService: AuthService) {
+  public userChartOptions: any = {
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: { color: '#e8fdfd' }
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#a7bfc9' }},
+      y: { ticks: { color: '#a7bfc9' }}
+    }
+  };
+  constructor(private router:Router, private transitionService: TransitionService, private authService: AuthService, private usersService: UsersService) {
     this.authService.user$.subscribe(user => {
       this.userRole = user?.roles?.[0] || null;
+      this.username = user?.username || null;
+      if (this.userRole === 'USER' && this.username) {
+        this.loadUserConsumptionPoint(this.username);
+      }
       console.log('User role:', this.userRole); 
     })
   }
@@ -60,6 +79,16 @@ export class HomeComponent implements AfterViewInit{
     }
   };
 
+  loadUserConsumptionPoint(username: string): void {
+    this.usersService.getConsumptionPointByUsername(username).subscribe({
+      next: (point) => {
+        this.userConsumptionPoint = point;
+       
+        
+      },
+      error: err => console.error('❌ Error fetching user consumption point:', err)
+    });
+  }
   ngAfterViewInit(): void {
     const elements = document.querySelectorAll('.fade-in, .fade-out');
   
@@ -91,6 +120,15 @@ export class HomeComponent implements AfterViewInit{
 
   navigateToSignUp(): void {
     this.navigateWithTransition('/signup');
+  }
+
+  navigateToOptimization(): void {
+    this.navigateWithTransition('/optimization');
+  }
+
+
+  navigateToManageUsers(): void {
+    this.navigateWithTransition('/manage-users');
   }
 
 }

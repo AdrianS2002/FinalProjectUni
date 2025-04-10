@@ -64,4 +64,20 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+
+router.get('/consumption-point/:username', async (req, res) => {
+    const username = req.params.username;
+
+    try {
+        const point = await userService.getConsumptionPointByUsername(username);
+        if (!point) {
+            return res.status(404).json({ message: 'No consumption point found' });
+        }
+        res.json(point);
+    } catch (err) {
+        console.error('❌ Eroare la obținerea punctului de consum:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;

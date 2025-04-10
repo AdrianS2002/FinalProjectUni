@@ -46,12 +46,14 @@ async function findFreeAddress() {
 
 async function loginUser(username, password) {
     const [rows] = await db.query(
-      'SELECT c.password, c.user_id FROM credentials c WHERE c.username = ?',
+      'SELECT c.password, c.user_id, c.username FROM credentials c WHERE c.username = ?',
       [username]
     );
     if (rows.length === 0) throw new Error('User not found');
     if (rows[0].password !== password) throw new Error('Invalid password');
     const userId = rows[0].user_id;
+    const foundUsername = rows[0].username;
+
   
     // Alăturăm tabela user_role cu tabela roles pentru a obține numele rolurilor
     const [roleRows] = await db.query(
@@ -63,7 +65,7 @@ async function loginUser(username, password) {
     );
     
     const roles = roleRows.map(r => r.role);
-    return { userId, roles };
+    return { userId,username: foundUsername, roles };
   }
 
 module.exports = {

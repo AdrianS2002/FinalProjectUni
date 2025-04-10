@@ -135,3 +135,51 @@ body {
   background-color: var(--primary-bg);
   font-family: Roboto, "Helvetica Neue", sans-serif;
 }
+
+.ng-select {
+  background-color: var(--secondary-bg) !important;
+  color: var(--input-text) !important;
+  padding: 6px !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--border-radius);
+  font-family: var(--font-primary);
+  font-size: 1rem;
+}
+
+.ng-select .ng-select-container {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  padding: 6px !important;
+  border: none;
+  border-radius: var(--border-radius);
+}
+
+.ng-dropdown-panel {
+  background-color: var(--secondary-bg) !important;
+  color: var(--input-text) !important;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgba(0, 255, 200, 0.1);
+  overflow: hidden;
+}
+
+.ng-option {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  padding: 10px 1rem !important;
+  text-align: center !important;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.ng-option:hover,
+.ng-option-marked {
+  background-color: var(--button-hover-bg) !important;
+  color: var(--primary-bg) !important;
+}
+
+.ng-option-selected {
+  background-color: var(--button-bg) !important;
+  color: var(--primary-bg) !important;
+  font-weight: bold;
+}

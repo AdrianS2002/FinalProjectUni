@@ -75,7 +75,7 @@ async function getAddressByUsername(username) {
 }
 
 
-async function runPSO(globalContract, nodes, iterations = 20) {
+async function runPSO(globalContract, nodes, iterations = 3) {
     console.log("=== Initial Node Positions ===");
     for (let i = 0; i < nodes.length; i++) {
         let posArray = Array.from(await nodes[i].getPosition());
@@ -138,6 +138,28 @@ async function main() {
     const accounts = await ethers.getSigners();  // All accounts from hardhat.config
 
     const nodeParams = await loadCSVData();
+
+    // const SCALE = 1e6;
+    // function scaleArray(arr, scale = SCALE) {
+    //     return arr.map(val => Math.floor(val * scale)); // sau Math.round
+    // }
+
+
+    // for (let i = 0; i < nodeParams.length; i++) {
+    //     const node = nodeParams[i];
+    
+    //     node.initialPosition = scaleArray(node.initialPosition);
+    //     node.initialVelocity = scaleArray(node.initialVelocity);
+    //     node.initialTariff = scaleArray(node.initialTariff);
+    //     node.initialCapacity = scaleArray(node.initialCapacity);
+    //     node.initialRenewableGeneration = scaleArray(node.initialRenewableGeneration);
+    //     node.initialBatteryCapacity = scaleArray(node.initialBatteryCapacity);
+    //     node.initialBatteryCharge = scaleArray(node.initialBatteryCharge);
+    //     node.initialFlexibleLoad = scaleArray(node.initialFlexibleLoad);
+    //     node.flexibilityAbove = scaleArray(node.flexibilityAbove);
+    //     node.flexibilityBelow = scaleArray(node.flexibilityBelow);
+    // }
+
     console.log("🔹 CSV Data Loaded:", JSON.stringify(nodeParams, null, 2));
 
     const DateTime = await ethers.getContractFactory("DateTime");
