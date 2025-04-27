@@ -30,6 +30,7 @@ async function registerUser(username, password, address, passphrase) {
 
 async function findFreeAddress() {
     const allAccounts = await getHardhatAccounts();
+    const accountsWithoutFirst = allAccounts.slice(1);
 
     const [used] = await db.query('SELECT address FROM users');
     const usedAddresses = used
@@ -37,7 +38,7 @@ async function findFreeAddress() {
         .filter(addr => addr !== null)
         .map(addr => addr.toLowerCase());
 
-    const free = allAccounts.find(acc => !usedAddresses.includes(acc.toLowerCase()));
+    const free = accountsWithoutFirst.find(acc => !usedAddresses.includes(acc.toLowerCase()));
 
     if (!free) throw new Error("No free address found!");
     return free;

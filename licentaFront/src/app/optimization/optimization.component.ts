@@ -1,6 +1,6 @@
-import { AfterViewInit, Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NgChartsModule } from 'ng2-charts';
+import { BaseChartDirective, NgChartsModule } from 'ng2-charts';
 import { OptimizationService, GlobalPlanEntry } from '../services/optimization.service';
 import { ChartConfiguration, Chart, ChartType, registerables, ScriptableContext } from 'chart.js';
 import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
@@ -11,6 +11,8 @@ import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
 import { NodeService } from '../services/node.service';
 import { UsersService } from '../services/users.service';
+import zoomPlugin from 'chartjs-plugin-zoom';
+Chart.register(...registerables, MatrixController, MatrixElement, zoomPlugin);
 
 @Component({
   selector: 'app-optimization',
@@ -21,14 +23,35 @@ import { UsersService } from '../services/users.service';
 })
 export class OptimizationComponent implements OnInit, AfterViewInit {
   chartData: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
+
   chartOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
-    plugins: { title: { display: true, text: 'Global Plan Evolution Over Time' } },
+    plugins: {
+      title: { display: true, text: 'Global Plan Evolution Over Time' },
+      legend: { display: false },
+      zoom: {
+        pan: {
+          enabled: true,
+          mode: 'xy'
+        },
+        zoom: {
+          wheel: { enabled: true },
+          pinch: { enabled: true },
+          mode: 'xy'
+        }
+      }
+    },
     scales: {
-      x: { title: { display: true, text: 'Timp (ora/minut)' } },
-      y: { title: { display: true, text: 'Consum (kWh)' } }
+      x: {
+        title: { display: true, text: 'Time (hour/minute)' }
+      },
+      y: {
+        title: { display: true, text: 'Consumption (kWh)' }
+      }
     }
   };
+
+ 
 
   heatmapData: any;
   heatmapOptions: any;
@@ -79,11 +102,22 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
   chartLineOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
     plugins: {
-      title: { display: true, text: 'Grafic linie' }
+      title: { display: true, text: 'Line Chart' },
+      zoom: {
+        pan: {
+          enabled: true,
+          mode: 'xy'
+        },
+        zoom: {
+          wheel: { enabled: true },
+          pinch: { enabled: true },
+          mode: 'xy'
+        }
+      }
     },
     scales: {
-      x: { title: { display: true, text: 'Ora' } },
-      y: { title: { display: true, text: 'Valoare' } }
+      x: { title: { display: true, text: 'Hour' } },
+      y: { title: { display: true, text: 'Value' } }
     }
   };
 
@@ -91,11 +125,11 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
   chartBarOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
     plugins: {
-      title: { display: true, text: 'Grafic bară' }
+      title: { display: true, text: 'Bar Chart' }
     },
     scales: {
-      x: { title: { display: true, text: 'Ora' } },
-      y: { title: { display: true, text: 'Valoare' } }
+      x: { title: { display: true, text: 'Hour' } },
+      y: { title: { display: true, text: 'Value' } }
     }
   };
 
@@ -212,10 +246,10 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
         data: matrixData,
         backgroundColor: (ctx: ScriptableContext<'matrix'>) => {
           const v = (ctx.dataset.data as any[])[ctx.dataIndex].v;
-          if (v < 60) return 'rgba(0, 123, 255, 0.8)';
-          if (v < 80) return 'rgba(0, 200, 255, 0.7)';
-          if (v < 100) return 'rgba(255, 205, 0, 0.7)';
-          if (v < 120) return 'rgba(255, 140, 0, 0.8)';
+          if (v <= 11) return 'rgba(0, 123, 255, 0.8)';
+          if (v <= 22) return 'rgba(0, 200, 255, 0.7)';
+          if (v <= 40) return 'rgba(255, 205, 0, 0.7)';
+          if (v <= 89) return 'rgba(255, 140, 0, 0.8)';
           return 'rgba(255, 0, 0, 0.9)';
         },
         borderWidth: 1,
@@ -229,7 +263,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
       scales: {
         x: {
           type: 'linear',
-          title: { display: true, text: 'Ora' },
+          title: { display: true, text: 'Hour' },
           offset: true,
           ticks: {
             stepSize: 1,
@@ -237,7 +271,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
           }
         },
         y: {
-          title: { display: true, text: 'Iterație' },
+          title: { display: true, text: 'Iteration' },
           offset: true,
           ticks: {
             callback: (value: number) => value + 1
@@ -249,11 +283,13 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
           callbacks: {
             label: (ctx: { raw: { v: number } }) => {
               const v = ctx.raw.v;
-              let level = '🔵 Low';
-              if (v >= 60 && v < 80) level = '🟢 Good';
-              else if (v >= 80 && v < 100) level = '🟡 Medium';
-              else if (v >= 100 && v < 120) level = '🟠 High';
-              else if (v >= 120) level = '🔴 Extreme';
+              let level = '';
+              if (v <= 11) level = '🔵 Low';
+              else if (v <= 22) level = '🟢 Good';
+              else if (v <= 40) level = '🟡 Medium';
+              else if (v <= 89) level = '🟠 High';
+              else level = '🔴 Extreme';
+
               return `Consum: ${v} kWh (${level})`;
             }
           }
@@ -277,7 +313,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
 
   loadInitialNodeData(): void {
     if (!this.username) return;
-   
+
     this.usersService.getConsumptionPointByUsername(this.username).subscribe(response => {
       const nodeName = response.name;
       const nodeIndex = Number(nodeName.split(' ')[1]) - 1;
@@ -433,14 +469,14 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    const labels = this.position.map((_, i) => `Ora ${i}`);
+    const labels = this.position.map((_, i) => `Hour ${i}`);
     const initialPosition = this.initialPosition;
 
     this.positionChartData = {
       labels,
       datasets: [
         {
-          label: 'Plan actual',
+          label: 'Actual Plan',
           data: this.position,
           borderColor: 'blue',
           backgroundColor: 'rgba(0,0,255,0.1)',
@@ -448,7 +484,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
           tension: 0.3
         },
         {
-          label: 'Plan optim anterior',
+          label: 'Anterior Optimal Plan',
           data: this.personalBestPosition,
           borderColor: 'green',
           backgroundColor: 'rgba(0,255,0,0.1)',
@@ -456,7 +492,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
           tension: 0.3
         },
         {
-          label: 'Plan inițial',
+          label: 'Initial Plan',
           data: initialPosition,
           borderColor: 'red',
           backgroundColor: 'rgba(128,128,128,0.1)',
@@ -470,12 +506,12 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
 
 
   updateTariffChart(): void {
-    const labels = this.tariff.map((_, i) => `Ora ${i}`);
+    const labels = this.tariff.map((_, i) => `Hour ${i}`);
     this.tariffChartData = {
       labels,
       datasets: [
         {
-          label: 'Tarif (bani/kWh)',
+          label: 'Tariff (cents/kWh)',
           data: this.tariff,
           backgroundColor: 'rgba(255, 159, 64, 0.7)'
         }
@@ -493,24 +529,24 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    const labels = this.batteryCharge.map((_, i) => `Ora ${i}`);
+    const labels = this.batteryCharge.map((_, i) => `Hour ${i}`);
     this.batteryChartData = {
       labels,
       datasets: [
         {
-          label: 'Încărcare baterie',
+          label: 'Battery Charge',
           data: this.batteryCharge,
-          backgroundColor: 'rgba(54, 162, 235, 0.6)'
+          backgroundColor: 'rgba(241, 0, 254, 0.93)'
         },
         {
-          label: 'Capacitate baterie',
+          label: 'Battery Capacity',
           data: this.batteryCapacity,
-          backgroundColor: 'rgba(153, 102, 255, 0.6)'
+          backgroundColor: 'rgb(153, 102, 255)'
         },
         {
-          label: 'Producție regenerabilă',
+          label: 'Renewable Generation',
           data: this.renewableGeneration,
-          backgroundColor: 'rgba(75, 192, 192, 0.6)'
+          backgroundColor: 'rgb(232, 248, 6)'
         }
       ]
     };
@@ -520,35 +556,37 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
 
 
   updateCapacityChart(): void {
-    const labels = this.capacity.map((_, i) => `Ora ${i}`);
+    const labels = this.capacity.map((_, i) => `Hour ${i}`);
     const minFlex = this.flexibilityBelow.map((v, i) => -v);
     const maxFlex = this.flexibilityAbove;
 
     this.capacityChartData = {
       labels,
+      
       datasets: [
         {
-          label: 'Capacitate maximă',
+          label: 'Maximum Capacity',
           data: this.capacity,
           borderColor: 'orange',
           fill: false,
           tension: 0.3
         },
         {
-          label: 'Flexibilitate peste',
+          label: 'Flexibility above',
           data: maxFlex,
           borderColor: 'green',
           borderDash: [5, 5],
           fill: false
         },
         {
-          label: 'Flexibilitate sub',
+          label: 'Flexibility below',
           data: minFlex,
           borderColor: 'red',
           borderDash: [5, 5],
           fill: false
         }
-      ]
+      ],
+      
     };
     console.log("Capacity chart data:", this.capacityChartData);
   }
@@ -561,20 +599,53 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
 
   get initialTotalCost(): number | null {
     if (!this.initialPosition.length || !this.initialTariff.length) return null;
-    return this.initialPosition.reduce((acc, val, i) => acc + val * this.initialTariff[i], 0)/100;
+    return this.initialPosition.reduce((acc, val, i) => acc + val * this.initialTariff[i], 0) / 100;
   }
-  
-  
+
+
   get optimizedTariffAverage(): number | null {
     return this.tariff.length > 0
-      ? this.tariff.reduce((a, b) => a + b, 0) 
+      ? this.tariff.reduce((a, b) => a + b, 0)
       : null;
   }
 
   get optimizedTotalCost(): number | null {
     if (!this.position.length || !this.tariff.length) return null;
-    return this.position.reduce((acc, val, i) => acc + val * this.tariff[i], 0)/100;
+    return this.position.reduce((acc, val, i) => acc + val * this.tariff[i], 0) / 100;
+  }
+
+  @ViewChildren(BaseChartDirective) charts!: QueryList<BaseChartDirective>;
+  @ViewChild('positionChart', { static: false }) positionChart?: BaseChartDirective;
+  @ViewChild('capacityChart') capacityChart?: BaseChartDirective;
+
+  resetZoom() {
+    console.log('🔁 resetZoom triggered on all charts');
+    this.charts.forEach((chart, i) => {
+      console.log(`🔧 Resetting chart ${i}`, chart);
+      chart.chart?.resetZoom();
+    });
+  }
+
+  resetZoomPosition() {
+    console.log("🔁 resetZoomPosition triggered");
+    const chart = this.charts.find(c => c.chart?.canvas?.id === 'positionChart');
+    if (chart) {
+      console.log("✅ positionChart found:", chart);
+      chart.chart?.resetZoom();
+    } else {
+      console.warn("⚠️ positionChart not found");
+    }
   }
   
-
+  resetZoomCapacity() {
+    console.log('🔁 resetZoomCapacity triggered');
+    const chart = this.charts.find(c => c.chart?.canvas?.id === 'capacityChart');
+    if (chart) {
+      console.log('✅ capacityChart found:', chart);
+      chart.chart?.resetZoom();
+    } else {
+      console.warn('⚠️ capacityChart not found');
+    }
+  }
+  
 }

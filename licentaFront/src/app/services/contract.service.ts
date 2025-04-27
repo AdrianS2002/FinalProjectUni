@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 
 export interface Contract {
   id?: number;
@@ -8,6 +8,7 @@ export interface Contract {
   address: string;
   owner: string;
   description?: string;
+  type?: string;
 }
 
 @Injectable({
@@ -43,5 +44,15 @@ export class ContractService {
     return this.http.put(`${this.apiUrl}/${id}/owner`, { newOwner });
   }
 
+  getUnassignedNodes(): Observable<Contract[]> {
+    return this.http.get<Contract[]>(this.apiUrl).pipe(
+      map(contracts =>
+        contracts.filter(c =>
+          c.type === 'Node' &&
+          c.owner?.toLowerCase() === '0x0000000000000000000000000000000000000000'
+        )
+      )
+    );
+  }
   
 }

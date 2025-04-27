@@ -4,10 +4,30 @@ import { UsersService } from '../services/users.service';
 import { Contract, ContractService } from '../services/contract.service';
 import { FormsModule, NgModel } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { AgGridModule } from 'ag-grid-angular';
+import { ModuleRegistry,
+  ClientSideRowModelModule,
+  ValidationModule,
+  TextFilterModule,
+  NumberFilterModule,
+  DateFilterModule,
+  SelectEditorModule } from 'ag-grid-community';
+import { CsvExportModule } from 'ag-grid-community';
+
+
+ModuleRegistry.registerModules([
+  ClientSideRowModelModule,
+  ValidationModule,
+  TextFilterModule,
+  NumberFilterModule,
+  DateFilterModule,
+  CsvExportModule,
+  SelectEditorModule
+]);
 @Component({
   selector: 'app-manage-users',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgSelectModule],
+  imports: [CommonModule, FormsModule, NgSelectModule, AgGridModule],
   templateUrl: './manage-users.component.html',
   styleUrls: ['./manage-users.component.css']
 })
@@ -17,12 +37,50 @@ export class ManageUsersComponent implements OnInit {
   isLoading = true;
   error: string | null = null;
   contractDropdownOptions: { id: number, name: string }[] = [];
+  
 
   selectedContractId: number | null = null;
   editingUserId: number | null = null;
 
   selectedRole: string | null = null;
   editingRoleUserId: number | null = null;
+
+  // columnDefs = [
+  //   { field: 'id', headerName: 'ID', sortable: true, filter: true },
+  //   { field: 'username', headerName: 'Username', sortable: true, filter: true },
+  //   { field: 'address', headerName: 'Address', sortable: true, filter: true },
+  //   {
+  //     field: 'role',
+  //     headerName: 'Role',
+  //     cellRenderer: (params: any) => {
+  //       return params.value === '1' ?'Manager' : 'User';
+  //     },
+  //     editable: true,
+  //     cellEditor: 'agSelectCellEditor',
+  //     cellEditorParams: {
+  //       values: ['Manager', 'User'],
+  //     }
+  //   },
+  //   {
+  //     field: 'contractName',
+  //     headerName: 'Contract',
+  //     valueGetter: (params: any) => {
+  //       return this.getContractNameForUser(params.data.address) || 'No Contract Assigned';
+  //     }
+  //   }
+  // ];
+  
+  // defaultColDef = {
+  //   editable: false,
+  //   resizable: true
+  // };
+  
+  // onCellValueChanged(event: any) {
+  //   if (event.colDef.field === 'role') {
+  //     this.assignRole(event.data); 
+  //   }
+  // }
+
 
   constructor(private usersService: UsersService, private contractService: ContractService) { }
 
@@ -142,6 +200,19 @@ export class ManageUsersComponent implements OnInit {
     this.selectedRole = user?.role || null;
   }
 
+  deleteUser(userId: number): void {
+    console.log(`🗑️ Deleting user with ID: ${userId}`)
+    this.usersService.deleteUser(userId).subscribe({
+      next: (res) => {
+        console.log(` User with ID ${userId} deleted successfully`, res);
+        this.loadData();
+      },
+      error: (err) => {
+        console.error(` Error deleting user with ID ${userId}`, err);
+      }
+    });
+  }
+
   assignRole(user: any): void {
     if (!this.selectedRole) return;
     console.log(` Updating role of ${user.username} to ${this.selectedRole}`);
@@ -158,4 +229,5 @@ export class ManageUsersComponent implements OnInit {
     });
   }
 
+  
 }  

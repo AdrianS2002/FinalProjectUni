@@ -1,5 +1,9 @@
+
+/* @import '@ag-grid-community/styles/ag-grid.css';
+@import '@ag-grid-community/styles/ag-theme-quartz.css'; */
 .manage-users-wrapper {
-    padding: 2rem;
+  
+    /* padding: 2rem; */
     font-family: var(--font-primary);
     color: var(--text-color);
   }
@@ -9,7 +13,7 @@
     margin-bottom: 2rem;
   }
   
-  .users-table {
+   .users-table {
     width: 100%;
     border-collapse: collapse;
     background-color: var(--secondary-bg);
@@ -48,5 +52,32 @@
   }
   .selection {
     cursor: pointer;
-  }
-  
+  } 
+/* 
+.grid-container {
+  width: 100%;
+  height: 100%;
+  display: block;
+  }  
+
+.ag-theme-quartz .ag-row {
+  height: 48px !important;
+}
+
+.ag-theme-quartz .ag-cell {
+  line-height: 48px !important;
+  font-size: 15px;
+  padding: 0 12px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ag-theme-quartz .ag-header-cell-label {
+  padding: 0 12px !important;
+  font-weight: 600;
+}
+
+.ag-theme-quartz .ag-cell-value {
+  color: var(--text-color);
+} */

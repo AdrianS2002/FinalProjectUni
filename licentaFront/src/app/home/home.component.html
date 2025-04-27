@@ -89,12 +89,43 @@
         <h1 class="greeting">Welcome back, {{ username }}!</h1>
       </section>
   
-      <section class="section-box user-section fade-in fade-out">
+      <section class="section-box user-section fade-in fade-out position-relative">
         <h2>🔌 Your Consumption Point</h2>
-        <ul>
-          <li>🏠 Consumption Point Name: <strong>{{ userConsumptionPoint?.name }}</strong></li>
-          <li>📜 Address: <strong>{{ userConsumptionPoint?.address }}</strong></li>
+
+        <div class="unassign-wrapper" *ngIf="userConsumptionPoint">
+          <button class="btn-unassign" (click)="unassignConsumptionPoint()" title="Remove Consumption Point">
+          <img src="eco-house.png" alt="Unassign" class="unassign-icon" />
+          </button>
+        </div>
+        
+      
+        <ul *ngIf="userConsumptionPoint">
+          <li>🏠 Consumption Point Name: <strong>{{ userConsumptionPoint.name }}</strong></li>
+          <li>📜 Address: <strong>{{ userConsumptionPoint.address }}</strong></li>
         </ul>
+      
+        <div *ngIf="!userConsumptionPoint && unassignedNodes.length" class="dropdown-container">
+          <label for="node-select" class="dropdown-label">Assign a consumption point:</label>
+          <select
+            id="node-select"
+            class="custom-dropdown"
+            [(ngModel)]="selectedNodeId"
+          >
+            <option [ngValue]="null" disabled>-- Select a node --</option>
+            <option *ngFor="let node of unassignedNodes" [ngValue]="node.id">
+              {{ node.name }} ({{ node.address }})
+            </option>
+          </select>
+        
+          <button class="btn btn-primary" style="margin-top: 0.8rem;" (click)="assignNodeToUser()" [disabled]="!selectedNodeId">
+            Confirm Assign
+          </button>
+        </div>
+        
+      
+        <div *ngIf="!userConsumptionPoint && !unassignedNodes.length">
+          <p>⚠️ No unassigned nodes available at the moment.</p>
+        </div>
       </section>
   
     </div>
