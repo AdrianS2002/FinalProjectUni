@@ -8,14 +8,18 @@ import { AuthGuard } from './auth.guard';
 import { OptimizationComponent } from './optimization/optimization.component';
 import { ManageUsersComponent } from './manage-users/manage-users.component';
 
+
 export const routes: Routes = [
     {path: 'login', component: LoginComponent},
     {path: 'signup', component: SignupComponent},
     {path: 'home', component: HomeComponent},
     {path: 'spinner1', component: LoadingSpinnerChartComponent},
+
     {path: 'about', component: AboutComponent},
     {path: 'optimization', component: OptimizationComponent, canActivate:[AuthGuard]},
+
     {path: 'manage-users', component: ManageUsersComponent, canActivate:[AuthGuard]},
+
     { path: '', redirectTo: 'login', pathMatch: 'full' },
     {path: '**', redirectTo: 'login'}
 ];

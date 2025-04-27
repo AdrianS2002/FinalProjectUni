@@ -219,6 +219,7 @@ async function main() {
         {
             ownerAddress = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
         }
+
         // Salvează nodul în baza de date
         InsertContract(`Node ${i + 1}`, node.target, ownerAddress , "Node");
     }
@@ -230,6 +231,7 @@ async function main() {
    // const testContract = await TestContract.connect(accounts[1]).deploy(100);
     //await testContract.waitForDeployment();
    // await InsertContractWithUUID("d00597e0-2e5c-4487-ac6c-72866ad3514c", "TestContract", testContract.target, accounts[1].address, "TestContract");
+
 
     console.log("===========================================");
     db.query('SELECT * FROM contracts', (err, results) => {

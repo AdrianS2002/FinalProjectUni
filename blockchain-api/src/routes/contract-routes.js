@@ -30,6 +30,7 @@ router.delete('/:id', async (req, res) => {
     res.send({ message: 'Contract deleted' });
 });
 
+
 router.put('/:id/owner', async (req, res) => {
     try {
       const { newOwner } = req.body;
@@ -42,5 +43,6 @@ router.put('/:id/owner', async (req, res) => {
       res.status(500).json({ error: err.message });
     }
   });
+
 
 module.exports = router;
