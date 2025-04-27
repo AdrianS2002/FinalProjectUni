@@ -42,9 +42,9 @@ contract Node {
     uint[] public flexibleLoad;
 
     // Penalizări locale
-    int constant ALPHA = 5;
-    int constant BETA = 3;
-    int constant GAMMA = 2;
+    int constant ALPHA = 75;
+    int constant BETA = 43;
+    int constant GAMMA = 18;
 
     // Parametrii pentru influența planului global
     int constant PENALTY_GLOBAL = 4;
@@ -124,8 +124,10 @@ contract Node {
             int localCost = 0;
 
             if (consumption < 0) {
-                int effectiveTariff = getEffectiveTariff(i, consumption);
-                localCost = -effectiveTariff * (-consumption);
+                // int effectiveTariff = getEffectiveTariff(i, consumption);
+                // localCost = -effectiveTariff * (-consumption);
+                   int exportTariff = int(tariff[i]); // sau poți seta o constantă fixă, ex: 5
+    localCost = exportTariff * consumption; // va fi un număr pozitiv (cost)
             } else {
                 uint cons = uint(consumption);
                 if (tempRenewable[i] >= cons) {
@@ -192,18 +194,19 @@ contract Node {
         uint hour,
         int consumption
     ) public view returns (int) {
-        int base = int(tariff[hour]);
-        if (consumption < 0) {
-            uint absConsumption = uint(-consumption);
-            uint extraDiscount = absConsumption / 2;
-            uint totalDiscount = 20 + extraDiscount;
-            if (totalDiscount > 40) {
-                totalDiscount = 40;
-            }
-            return (base * int(100 - totalDiscount)) / 100;
-        } else {
-            return base;
-        }
+        // int base = int(tariff[hour]);
+        // if (consumption < 0) {
+        //     uint absConsumption = uint(-consumption);
+        //     uint extraDiscount = absConsumption / 2;
+        //     uint totalDiscount = 20 + extraDiscount;
+        //     if (totalDiscount > 40) {
+        //         totalDiscount = 40;
+        //     }
+        //     return (base * int(100 - totalDiscount)) / 100;
+        // } else {
+        //     return base;
+        // }
+        return int(tariff[hour]);
     }
 
     // Actualizează cea mai bună poziție și transmite rezultatul către GlobalContract.
@@ -320,8 +323,10 @@ contract Node {
             int localCost = 0;
 
             if (consumption < 0) {
-                int effectiveTariff = getEffectiveTariff(i, consumption);
-                localCost = -effectiveTariff * (-consumption);
+                // int effectiveTariff = getEffectiveTariff(i, consumption);
+                // localCost = -effectiveTariff * (-consumption);
+                int exportTariff = int(tariff[i]); // sau poți seta o constantă fixă, ex: 5
+                localCost = exportTariff * consumption; // va fi un număr pozitiv (cost)
             } else {
                 uint cons = uint(consumption);
                 if (tempRenewable[i] >= cons) {

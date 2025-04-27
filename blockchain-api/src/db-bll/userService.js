@@ -70,12 +70,28 @@ async function updateUser(id, data) {
 }
 
 // Delete user by ID
-async function deleteUser(id) {
-    await db.query('DELETE FROM user_role WHERE user=?', [id]);
-    await db.query('DELETE FROM credentials WHERE user_id=?', [id]);
-    await db.query('DELETE FROM users WHERE id=?', [id]);
-}
-
+async function deleteUser(userId) {
+    // Găsește adresa userului
+    const [user] = await db.query('SELECT address FROM users WHERE id = ?', [userId]);
+    if (!user || user.length === 0) {
+      throw new Error('User not found');
+    }
+  
+    const address = user[0].address;
+  
+    // Dezactivează contractele asociate (setează owner la 0x0000...)
+    await db.query('UPDATE contracts SET owner = ? WHERE owner = ?', [
+      '0x0000000000000000000000000000000000000000',
+      address
+    ]);
+  
+    // Șterge userul
+    await db.query('DELETE FROM users WHERE id = ?', [userId]);
+  
+    // Șterge din alte tabele dacă e nevoie
+    await db.query('DELETE FROM credentials WHERE user_id = ?', [userId]);
+    await db.query('DELETE FROM user_role WHERE user = ?', [userId]);
+  }
 async function getConsumptionPointByUsername(username) {
     const [rows] = await db.query(`
         SELECT c.id, c.name, c.address, c.type

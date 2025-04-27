@@ -44,9 +44,13 @@ export class AuthService {
     console.log('Sending login request with data:', data);
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, data).pipe(
       tap(response => {
-        console.log('Login response received:', response);
-        this.userSubject.next(response.user);
-        console.log('User updated in AuthService:', response.user);
+        const mappedUser = {
+          ...response.user,
+          id: response.user.userId 
+        };
+        
+        this.userSubject.next(mappedUser);
+        console.log('✅ User updated in AuthServicEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEe:', mappedUser);
       })
     );
   }

@@ -205,7 +205,20 @@ async function main() {
             console.log(`✅ Contractul pentru Node ${i + 1} verificat on-chain la adresa ${node.target}`);
         }
 
-        const ownerAddress = "0x0000000000000000000000000000000000000000"; 
+        let ownerAddress = "0x0000000000000000000000000000000000000000";
+        
+        if(i === 0)
+        {
+            ownerAddress = "0x727d94033a8e61a8911ff9d84ae72222565eab09";
+        }
+        else if(i === 1)
+        {
+            ownerAddress = "0x09DB0a93B389bEF724429898f539AEB7ac2Dd55f";
+        }
+        else if(i === 2)
+        {
+            ownerAddress = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
+        }
 
         // Salvează nodul în baza de date
         InsertContract(`Node ${i + 1}`, node.target, ownerAddress , "Node");

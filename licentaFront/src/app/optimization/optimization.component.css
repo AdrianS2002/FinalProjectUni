@@ -73,7 +73,7 @@ button {
 
 .chart-grid {
     display: flex;
-    gap: 2rem;
+    gap: 1rem;
     justify-content: center;
     align-items: flex-start;
     flex-wrap: wrap;
@@ -83,7 +83,7 @@ button {
 /* Fiecare grafic ocupă 45% din lățime pe ecrane mari */
 .chart-grid>div {
     flex: 1 1 45%;
-    max-width: 600px;
+    max-width: 1200px;
 }
 
 /* Stiluri pentru info-section să fie mai compacte și bine aliniate */
@@ -141,11 +141,14 @@ button {
 
 .chart-container {
     position: relative;
-    margin: 1rem auto;
+    margin: 0rem;
+    max-width: 1800px;
     width: 100%;
-    max-width: 800px;
 }
 
+.chart-wrapper {
+    position: relative; /* esențial pentru ca butonul să fie poziționat relativ la el */
+  }
 .chart-grid {
     display: flex;
     justify-content: space-between;
@@ -156,7 +159,7 @@ button {
 .chart-wrapper canvas {
     display: block;
     width: 100%;
-    height: 400px;
+    height: 600px;
     border-radius: 8px;
 }
 
@@ -353,6 +356,33 @@ button {
   .chart-container {
     background-color: var(--secondary-bg);
     padding: 1rem;
+    margin:0;
     border-radius: var(--border-radius);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .reset-zoom-btn {
+    position: absolute;
+    top: 1.5rem;
+    right: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    border-radius: 50%;
+    padding: 0;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.3s ease, transform 0.2s ease;
+  }
+
+  .reset-zoom-btn img{
+    width: 40px;
+    height: 40px;
+  }
+  
+  .reset-zoom-btn:hover {
+    transform: scale(1.7);
   }
