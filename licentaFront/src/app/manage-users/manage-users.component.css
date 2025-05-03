@@ -39,7 +39,12 @@
   }
   
 
-    
+  .delete-button{
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    text-align: center;
+  }
   @keyframes fadeInUp {
     from {
       opacity: 0;
@@ -49,6 +54,11 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+  .actions{
+    justify-content: center;
+    align-items: center;
+
   }
   .selection {
     cursor: pointer;

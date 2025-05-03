@@ -27,7 +27,6 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
   chartOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
     plugins: {
-      title: { display: true, text: 'Global Plan Evolution Over Time' },
       legend: { display: false },
       zoom: {
         pan: {
@@ -43,7 +42,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
     },
     scales: {
       x: {
-        title: { display: true, text: 'Time (hour/minute)' }
+        title: { display: true, text: 'Number Of Iteration' }
       },
       y: {
         title: { display: true, text: 'Consumption (kWh)' }
@@ -102,7 +101,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
   chartLineOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
     plugins: {
-      title: { display: true, text: 'Line Chart' },
+     
       zoom: {
         pan: {
           enabled: true,
@@ -117,7 +116,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
     },
     scales: {
       x: { title: { display: true, text: 'Hour' } },
-      y: { title: { display: true, text: 'Value' } }
+      y: { title: { display: true, text: 'Kwh' } }
     }
   };
 
@@ -125,11 +124,22 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
   chartBarOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
     plugins: {
-      title: { display: true, text: 'Bar Chart' }
+      
     },
     scales: {
       x: { title: { display: true, text: 'Hour' } },
-      y: { title: { display: true, text: 'Value' } }
+      y: { title: { display: true, text: 'Cents' } }
+    }
+  };
+
+  batteryChartOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    plugins: {
+      title: { display: true, text: 'Battery Status' }
+    },
+    scales: {
+      x: { title: { display: true, text: 'Hour' } },
+      y: { title: { display: true, text: 'kWh' } }
     }
   };
 
@@ -223,7 +233,9 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
   }
 
   processChartData(entries: GlobalPlanEntry[]): void {
-    const labels = entries.map(entry => new Date(Number(entry.timestamp) * 1000).toLocaleTimeString());
+    //const labels = entries.map(entry => new Date(Number(entry.timestamp) * 1000).toLocaleTimeString());
+    const labels = entries.map((_, index) => index + 1); // Iteration number: 1, 2, 3, ...
+
     const numHours = entries[0]?.plan.length || 0;
     const datasets = Array.from({ length: numHours }, (_, i) => ({
       label: `Hour ${i + 1}`,
@@ -260,6 +272,18 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
 
     this.heatmapOptions = {
       responsive: true,
+      legend: {
+        display: true,
+        labels: {
+          generateLabels: () => [
+            { text: '🔵 Low', fillStyle: 'rgba(0, 123, 255, 0.8)' },
+            { text: '🟢 Good', fillStyle: 'rgba(0, 200, 255, 0.7)' },
+            { text: '🟡 Medium', fillStyle: 'rgba(255, 205, 0, 0.7)' },
+            { text: '🟠 High', fillStyle: 'rgba(255, 140, 0, 0.8)' },
+            { text: '🔴 Extreme', fillStyle: 'rgba(255, 0, 0, 0.9)' }
+          ]
+        }
+      },
       scales: {
         x: {
           type: 'linear',
@@ -511,7 +535,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
       labels,
       datasets: [
         {
-          label: 'Tariff (cents/kWh)',
+          label: 'Price (cents/kWh)',
           data: this.tariff,
           backgroundColor: 'rgba(255, 159, 64, 0.7)'
         }
@@ -532,6 +556,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
     const labels = this.batteryCharge.map((_, i) => `Hour ${i}`);
     this.batteryChartData = {
       labels,
+      
       datasets: [
         {
           label: 'Battery Charge',
@@ -548,7 +573,8 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
           data: this.renewableGeneration,
           backgroundColor: 'rgb(232, 248, 6)'
         }
-      ]
+      ],
+      
     };
 
     console.log("✅ Battery chart data (actualizat):", this.batteryChartData);

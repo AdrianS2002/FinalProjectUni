@@ -145,10 +145,14 @@ button {
     max-width: 1800px;
     width: 100%;
 }
-
+.chart-container .line-chart {
+    max-width: 4870px;
+}
 .chart-wrapper {
-    position: relative; /* esențial pentru ca butonul să fie poziționat relativ la el */
-  }
+    position: relative;
+    /* esențial pentru ca butonul să fie poziționat relativ la el */
+}
+
 .chart-grid {
     display: flex;
     justify-content: space-between;
@@ -285,7 +289,7 @@ button {
     }
 }
 
-.optimization-wrapper{
+.optimization-wrapper {
     margin-top: 4rem;
 }
 
@@ -345,23 +349,23 @@ button {
     grid-template-columns: 1fr;
     gap: 2rem;
     margin-top: 2rem;
-  }
-  
-  @media (min-width: 768px) {
+}
+
+@media (min-width: 768px) {
     .charts-grid {
-      grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr;
     }
-  }
-  
-  .chart-container {
+}
+
+.chart-container {
     background-color: var(--secondary-bg);
     padding: 1rem;
-    margin:0;
+    margin: 0;
     border-radius: var(--border-radius);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
+}
 
-  .reset-zoom-btn {
+.reset-zoom-btn {
     position: absolute;
     top: 1.5rem;
     right: 12px;
@@ -376,13 +380,33 @@ button {
     cursor: pointer;
     z-index: 10;
     transition: background 0.3s ease, transform 0.2s ease;
-  }
+}
 
-  .reset-zoom-btn img{
+.reset-zoom-btn img {
     width: 40px;
     height: 40px;
-  }
-  
-  .reset-zoom-btn:hover {
+}
+
+.reset-zoom-btn:hover {
     transform: scale(1.7);
-  }
+}
+
+.heatmap-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.legend-box {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    margin-right: 6px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    vertical-align: middle;
+}
