@@ -2,8 +2,8 @@
 {
 <div class="optimization-wrapper fade-in fade-out">
   <div class="chart-grid fade-in fade-out">
-    <div class="chart-container">
-      <h2>Global Plan</h2>
+    <div class="chart-container line-chart">
+      <h2>Community Energy Optimization</h2>
       <div class="chart-wrapper" *ngIf="!isLoadingChart; else loadingLine">
         <button class="reset-zoom-btn" (click)="resetZoom()" title="Reset Zoom">
           <img src="zoom.png" alt="Reset" />
@@ -18,22 +18,30 @@
     </div>
 
     <div class="chart-container">
-      <h2>Heatmap</h2>
+      <h2> Community Energy Optimization Map</h2>
 
       <div class="chart-wrapper" *ngIf="!isLoadingChart; else loadingHeatmap">
         <canvas baseChart [data]="heatmapData" [options]="heatmapOptions" [type]="'matrix'"></canvas>
+        <div class="heatmap-legend">
+          <div><span class="legend-box" style="background-color: rgba(0, 123, 255, 0.8)"></span> 🔵 Low (0–11)</div>
+          <div><span class="legend-box" style="background-color: rgba(0, 200, 255, 0.7)"></span> 🟢 Good (12–22)</div>
+          <div><span class="legend-box" style="background-color: rgba(255, 205, 0, 0.7)"></span> 🟡 Medium (23–40)</div>
+          <div><span class="legend-box" style="background-color: rgba(255, 140, 0, 0.8)"></span> 🟠 High (41–89)</div>
+          <div><span class="legend-box" style="background-color: rgba(255, 0, 0, 0.9)"></span> 🔴 Extreme (90+)</div>
+        </div>
       </div>
       <ng-template #loadingHeatmap>
         <div class="loading-background">
           <app-loading-spinner-chart></app-loading-spinner-chart>
         </div>
       </ng-template>
+      
     </div>
   </div>
 
   <div class="info-section fade-in fade-out">
     <button (click)="triggerGlobalComputation()"><span></span><span></span><span></span><span></span>🔄 Recalculate
-      Global Plan
+     Community Energy Optimization
     </button>
     <div *ngIf="isLoading" class="spinner"></div>
     <div class="frozen-cost fade-in fade-out">
@@ -94,9 +102,9 @@
         <p>{{ frozenCost }} $</p>
       </div>
 
-      <div class="user-card bg-purple" *ngIf="currentCost && frozenCost">
+      <div class="user-card bg-purple"  *ngIf="initialTotalCost !== null && optimizedTotalCost !== null">
         <h3>📉 Potential Economy</h3>
-        <p>{{ ((currentCost - frozenCost) / currentCost * 100) | number: '1.0-2' }}%</p>
+        <p>{{ ((initialTotalCost - optimizedTotalCost) / initialTotalCost * 100) | number: '1.0-2' }} %</p>
       </div>
 
       <div class="user-card bg-orange" *ngIf="initialTotalCost !== null">
@@ -114,7 +122,7 @@
     <!-- GRAFICE -->
     <div class="charts-grid">
       <div class="chart-container">
-        <h2>📈 Actual Plan vs Optimal Plan</h2>
+        <h2>Energy Optimization Impact Over Time</h2>
         <div class="chart-wrapper"*ngIf="!isLoadingChart; else loadingLine">
           <button class="reset-zoom-btn" (click)="resetZoomPosition()" title="Reset Zoom">
             <img class="userImg" src="zoom.png" alt="Reset" />
@@ -130,7 +138,7 @@
       </div>
 
       <div class="chart-container">
-        <h2>💰 Tariff Hours</h2>
+        <h2>Hourly Energy Price</h2>
         <div class="chart-wrapper"*ngIf="!isLoadingChart; else loadingLine">
           <canvas baseChart [type]="'bar'" [data]="tariffChartData" [options]="chartBarOptions"></canvas>
         </div>
@@ -142,9 +150,9 @@
       </div>
 
       <div class="chart-container" >
-        <h2>🔋 Battery & Renewable Energy </h2>
+        <h2>Charging Trends & Green Energy Contribution </h2>
         <div class="chart-wrapper"*ngIf="!isLoadingChart; else loadingLine">
-        <canvas baseChart [type]="'bar'" [data]="batteryChartData" [options]="chartBarOptions"></canvas>
+        <canvas baseChart [type]="'bar'" [data]="batteryChartData" [options]="batteryChartOptions"></canvas>
         </div>
         <ng-template #loadingLine>
           <div class="loading-background">
@@ -154,7 +162,7 @@
       </div>
 
       <div class="chart-container">
-        <h2>⚙️ Capacity & Flexibility</h2>
+        <h2>Energy Profile</h2>
         <div class="chart-wrapper" *ngIf="!isLoadingChart; else loadingLine">
           <button class="reset-zoom-btn" (click)="resetZoomCapacity()" title="Reset Zoom">
             <img class="userImg" src="zoom.png" alt="Reset" />
