@@ -17,6 +17,7 @@
     transform: translate(-50%, -55%);
     backdrop-filter: blur(8px);
     background-color: var(--secondary-bg);
+
     box-sizing: border-box;
     box-shadow: 0 15px 25px rgba(0, 43, 54, 0.9);
     border-radius: 10px;
@@ -68,18 +69,23 @@
     font-size: 12px;
   }
   
+
   .login-box form button {
+
     position: relative;
     display: inline-block;
     padding: 10px 20px;
     font-weight: bold;
     color: #00ffc8;
+
     background-color: var(--secondary-bg);
+
     font-size: 16px;
     cursor: pointer;
     text-transform: uppercase;
     overflow: hidden;
     transition: .5s;
+
     text-decoration: none;
     margin-top: 40px;
     letter-spacing: 3px;
@@ -90,11 +96,14 @@
 
 
   .login-box button span {
+
     position: absolute;
     display: block;
   }
   
+
   .login-box button span:nth-child(1) {
+
     top: 0;
     left: -100%;
     width: 100%;
@@ -108,7 +117,9 @@
     50%, 100% { left: 100%; }
   }
   
+
   .login-box button span:nth-child(2) {
+
     top: -100%;
     right: 0;
     width: 2px;
@@ -123,7 +134,9 @@
     50%, 100% { top: 100%; }
   }
   
+
   .login-box button span:nth-child(3) {
+
     bottom: 0;
     right: -100%;
     width: 100%;
@@ -138,7 +151,9 @@
     50%, 100% { right: 100%; }
   }
   
+
   .login-box button span:nth-child(4) {
+
     bottom: -100%;
     left: 0;
     width: 2px;
@@ -153,11 +168,13 @@
     50%, 100% { bottom: 100%; }
   }
 
+
   .login-box button:hover {
     background: #002721;
     color: #00e6c6;
     border-radius: 5px;
   }
+
   
   .login-box p:last-child {
     color: #66ffcc;
@@ -174,5 +191,7 @@
     background: transparent;
     color: #66ffcc;
     border-radius: 5px;
+
   }
   
+

@@ -4,35 +4,25 @@
 
 Using the folder provided, the steps to run deploy contracts from truffle to parity are:
 
-1. Inside parity run
+1. Run local blockchain
 
 ```bash
-openethereum --config config.dev.toml --unlock 0x727d94033a8e61a8911ff9d84ae72222565eab06 --password pass.txt
+ npx hardhat node
 ```
 
-2. Install dependencies inside the project
+2. Deploy contracts
 
 ```bash
-npm install
+npx hardhat run scripts/deploy.js --network localhost
 ```
 
-3. Install the truffle globally using:
+3. Start offchain application
 
 ```bash
-npm install -g truffle
+npm start
 ```
 
-4. Inside the project run ( consider also deleting the complied contracts from build/contracts)
-
-```bash
-truffle compile --reset
-```
-
-5. Migrate Libraries
-
-```bash
-truffle migrate --network parity
-```
+4. Acces http://localhost:3000/blockchain-api/
 
 
 # FinalProjectUni

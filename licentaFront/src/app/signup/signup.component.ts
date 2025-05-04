@@ -1,13 +1,17 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+
 import { AuthService, SignupData, SignupResponse } from '../services/auth.service';
 import { CommonModule, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
+
 @Component({
   selector: 'app-signup',
   standalone: true,
+
   imports: [CommonModule, FormsModule],
+
   templateUrl: './signup.component.html',
   styleUrl: './signup.component.css'
 })
@@ -56,3 +60,4 @@ export class SignupComponent {
     this.router.navigate(['/login']);
   }
 }
+
