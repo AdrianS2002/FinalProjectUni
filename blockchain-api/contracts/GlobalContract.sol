@@ -16,7 +16,7 @@ interface GlobalContractInterface {
     function getGlobalOptimalPlanArray() external view returns (int[] memory);
     function getLastUpdatedTimestamp() external view returns (uint);
     function getBestGlobalPlan() external view returns (int[] memory);
-     function frozenGlobalCost() external view returns (int);
+    function frozenGlobalCost() external view returns (int);
 }
 
 contract GlobalContract {
@@ -40,14 +40,17 @@ contract GlobalContract {
     int public bestGlobalCost = type(int).max;
     int[] public bestGlobalPlan;
 
-
     int public frozenGlobalCost;
     uint public lastUpdatedTimestamp; // Momentul ultimei actualizări globale
 
     bool public finalized = false;
 
     event NodeResultUpdated(address indexed node, int bestScore);
-    event GlobalPlanComputed(address indexed trigger, int[] newPlan, uint timestamp);
+    event GlobalPlanComputed(
+        address indexed trigger,
+        int[] newPlan,
+        uint timestamp
+    );
 
     // Nodurile apelează această funcție pentru a-și transmite rezultatul optim.
     // Se folosește un mapping pentru a stoca rezultatele și o listă pentru a itera ulterior.
@@ -120,7 +123,8 @@ contract GlobalContract {
             }
         }
         lastUpdatedTimestamp = block.timestamp;
-        emit GlobalPlanComputed(msg.sender,
+        emit GlobalPlanComputed(
+            msg.sender,
             this.getGlobalOptimalPlanArray(),
             lastUpdatedTimestamp
         );
@@ -166,5 +170,9 @@ contract GlobalContract {
 
     function getLastUpdatedTimestamp() external view returns (uint) {
         return lastUpdatedTimestamp;
+    }
+
+    function getNodeAddresses() public view returns (address[] memory) {
+        return nodeAddresses;
     }
 }

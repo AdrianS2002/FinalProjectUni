@@ -23,11 +23,11 @@
       <div class="chart-wrapper" *ngIf="!isLoadingChart; else loadingHeatmap">
         <canvas baseChart [data]="heatmapData" [options]="heatmapOptions" [type]="'matrix'"></canvas>
         <div class="heatmap-legend">
-          <div><span class="legend-box" style="background-color: rgba(0, 123, 255, 0.8)"></span> 🔵 Low (0–11)</div>
-          <div><span class="legend-box" style="background-color: rgba(0, 200, 255, 0.7)"></span> 🟢 Good (12–22)</div>
-          <div><span class="legend-box" style="background-color: rgba(255, 205, 0, 0.7)"></span> 🟡 Medium (23–40)</div>
-          <div><span class="legend-box" style="background-color: rgba(255, 140, 0, 0.8)"></span> 🟠 High (41–89)</div>
-          <div><span class="legend-box" style="background-color: rgba(255, 0, 0, 0.9)"></span> 🔴 Extreme (90+)</div>
+          <div><span class="legend-box" style="background-color: rgba(0, 123, 255, 0.8)"></span>  Low (0–11)</div>
+          <div><span class="legend-box" style="background-color: rgba(0, 200, 255, 0.7)"></span>  Good (12–22)</div>
+          <div><span class="legend-box" style="background-color: rgba(255, 205, 0, 0.7)"></span>  Medium (23–40)</div>
+          <div><span class="legend-box" style="background-color: rgba(255, 140, 0, 0.8)"></span>  High (41–89)</div>
+          <div><span class="legend-box" style="background-color: rgba(255, 0, 0, 0.9)"></span>  Extreme (90+)</div>
         </div>
       </div>
       <ng-template #loadingHeatmap>
@@ -37,12 +37,54 @@
       </ng-template>
       
     </div>
+
+    <div class="chart-container">
+      <h2>Energy Breakdown </h2>
+    
+      <div class="breakdown-controls">
+        <div class="dropdown-group left">
+          <label for="userSelect">👤 Select User:</label>
+          <select id="userSelect"
+                  [(ngModel)]="selectedBreakdownUser"
+                  (change)="loadBreakdownForUser(selectedBreakdownUser!)"
+                  class="custom-dropdown">
+            <option *ngFor="let user of breakdownUsers" [value]="user.username">{{ user.username }}</option>
+          </select>
+        </div>
+      
+        <div class="dropdown-group right">
+          <label for="metricSelect">📊 Select Metric:</label>
+          <select id="metricSelect"
+                  [(ngModel)]="selectedBreakdownMetric"
+                  (change)="loadBreakdownForUser(selectedBreakdownUser!)"
+                  class="custom-dropdown">
+            <option *ngFor="let opt of breakdownMetricOptions" [value]="opt.key">{{ opt.label }}</option>
+          </select>
+        </div>
+      </div>
+    
+      <div class="chart-wrapper" *ngIf="!isLoadingBreakdown && breakdownData; else loadingBreakdown">
+        <canvas baseChart [type]="'bar'" [data]="breakdownData" [options]="breakdownOptions"></canvas>
+      </div>
+    
+      <ng-template #loadingBreakdown>
+        <div class="loading-background">
+          <app-loading-spinner-chart></app-loading-spinner-chart>
+        </div>
+      </ng-template>
+    </div>
+
+    <div class="chart-container">
+      <h2>Energy Contribution to Community Cost</h2>
+      <canvas baseChart [type]="'pie'" [data]="costPieData" [options]="costPieOptions"></canvas>
+    </div>
+
   </div>
 
   <div class="info-section fade-in fade-out">
-    <button (click)="triggerGlobalComputation()"><span></span><span></span><span></span><span></span>🔄 Recalculate
+    <!-- <button (click)="triggerGlobalComputation()"><span></span><span></span><span></span><span></span>🔄 Recalculate
      Community Energy Optimization
-    </button>
+    </button> -->
     <div *ngIf="isLoading" class="spinner"></div>
     <div class="frozen-cost fade-in fade-out">
       💰 Network Cost After Optimization:

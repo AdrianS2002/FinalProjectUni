@@ -17,6 +17,7 @@ let chainRouter = require('./src/routes/chain-route');
 const authRoutes = require('./src/routes/auth-routes');
 const contractRoutes = require('./src/routes/contract-routes');
 const userRoutes = require('./src/routes/user-routes');
+const locationRoutes = require('./src/routes/location-routes');
 const nodesRouter = require('./src/routes/eth-routes/node-routes');
 const globalRoutes = require('./src/routes/eth-routes/global-routes');
 
@@ -51,6 +52,7 @@ app.use(baseURL + '/chain', chainRouter);
 app.use(baseURL + '/test', testRouter);
 app.use(baseURL + '/auth', authRoutes);
 app.use(baseURL + '/contracts', contractRoutes);
+app.use(baseURL + '/locations', locationRoutes)
 app.use(baseURL + '/users', userRoutes);
 app.use(baseURL + '/nodes', nodesRouter);
 app.use(baseURL + '/global', globalRoutes);

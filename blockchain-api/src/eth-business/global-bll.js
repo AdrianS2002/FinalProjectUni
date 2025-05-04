@@ -97,6 +97,30 @@ async function getBestGlobalPlan() {
     }
 }
 
+async function getNodeAddresses() {
+    try {
+        let { contractAddress } = await getGlobalContract();
+        const result = await globalDAO.getNodeAddresses(contractAddress);
+        return result;
+    } catch (e) {
+        return Promise.reject(e);
+    }
+}
+
+async function getPersonalBestScoreByAddress(address) {
+    try {
+      let { contractAddress } = await getGlobalContract();
+      const result = await globalDAO.getPersonalBestScoreByAddress(contractAddress, address);
+      return result;
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+  
+
+
+
+
 module.exports = {
     computeGlobalOptimalPlan,
     getGlobalOptimalPlanHour,
@@ -106,5 +130,7 @@ module.exports = {
     getBestPosition,
     getFrozenGlobalCost,
     getBestGlobalPlan,
-    getGlobalPlanHistory
+    getGlobalPlanHistory,
+    getNodeAddresses,
+    getPersonalBestScoreByAddress
 };

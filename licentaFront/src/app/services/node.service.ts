@@ -1,14 +1,21 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable, tap } from 'rxjs';
-
+export interface FrozenBreakdownHour {
+  consumption: number;
+  isInjection: boolean;
+  fromRenewable: number;
+  fromBattery: number;
+  fromGrid: number;
+  globalTarget: number;
+}
 @Injectable({
   providedIn: 'root'
 })
 export class NodeService {
   private apiUrl = 'http://localhost:3000/blockchain-api/nodes';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getPosition(username: string): Observable<number[]> {
     return this.http.get<{ position: (string | number)[] }>(`${this.apiUrl}/position/${username}`).pipe(
@@ -21,8 +28,8 @@ export class NodeService {
       map(response => response.position.map(Number))
     );
   }
-  
-  
+
+
 
   getPersonalBestScore(username: string): Observable<number> {
     return this.http.get<number>(`${this.apiUrl}/personalBestScore/${username}`);
@@ -31,7 +38,7 @@ export class NodeService {
   getFrozenCost(username: string): Observable<{ frozenCost: number }> {
     return this.http.get<{ frozenCost: number }>(`${this.apiUrl}/frozenCost/${username}`);
   }
-  
+
 
   getObjectiveFunction(username: string): Observable<{ result: number | string }> {
     return this.http.get<{ result: number | string }>(`${this.apiUrl}/objectiveFunction/${username}`);
@@ -67,13 +74,13 @@ export class NodeService {
       map((response) => response.map(Number))
     );
   }
-  
+
   getBatteryCapacity(username: string): Observable<number[]> {
     return this.http.get<{ batteryCapacity: (number | string)[] }>(`${this.apiUrl}/batteryCapacity/${username}`).pipe(
       map(response => response.batteryCapacity.map(Number))
     );
   }
-  
+
   getRenewableGeneration(username: string): Observable<number[]> {
     return this.http.get<{ renewableGeneration: (number | string)[] }>(`${this.apiUrl}/renewableGeneration/${username}`).pipe(
       map(response => response.renewableGeneration.map(Number))
@@ -83,8 +90,28 @@ export class NodeService {
   getFlexibilityAbove(username: string): Observable<number[]> {
     return this.http.get<number[]>(`${this.apiUrl}/flexibilityAbove/${username}`);
   }
-  
+
   getFlexibilityBelow(username: string): Observable<number[]> {
     return this.http.get<number[]>(`${this.apiUrl}/flexibilityBelow/${username}`);
   }
+
+  getFrozenBreakdown(username: string): Observable<FrozenBreakdownHour[]> {
+    return this.http.get<{ breakdown: FrozenBreakdownHour[] }>(`${this.apiUrl}/frozenBreakdown/${username}`).pipe(
+      map(res => res.breakdown)
+    );
+  }
+
+
+  getNodeAddresses(): Observable<string[]> {
+    return this.http.get<{ nodeAddresses: string[] }>('http://localhost:3000/blockchain-api/global/node-addresses')
+      .pipe(map(res => res.nodeAddresses));
+  }
+
+  getPersonalBestScoreByAddress(address: string): Observable<number> {
+    return this.http.get<{ score: string }>(`http://localhost:3000/blockchain-api/global/personalBestScoreByAddress/${address}`)
+      .pipe(map(res => +res.score));
+  }
+  
+
+
 }

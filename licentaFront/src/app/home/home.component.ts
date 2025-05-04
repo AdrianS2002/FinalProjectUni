@@ -1,18 +1,21 @@
 import { AfterViewInit, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgChartsModule } from 'ng2-charts';
-import { ChartType } from 'chart.js';
+import { ChartType, ChartData, ChartOptions } from 'chart.js';
 import { Router } from '@angular/router';
 import { TransitionService } from '../services/transition.service';
 import { AuthService } from '../services/auth.service';
 import { User, UsersService } from '../services/users.service';
 import { Contract, ContractService } from '../services/contract.service';
+import { LocationService, Location } from '../services/location.service';
 import { FormsModule } from '@angular/forms';
+import { FrozenBreakdownHour, NodeService } from '../services/node.service';
+import { LoadingSpinnerChartComponent } from "../loading-spinner-chart/loading-spinner-chart.component";
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, NgChartsModule, FormsModule],
+  imports: [CommonModule, NgChartsModule, FormsModule, LoadingSpinnerChartComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })
@@ -22,6 +25,13 @@ export class HomeComponent implements AfterViewInit {
   public username: string | null = null;
   public userConsumptionPoint: any = null;
   public currentUser: User | null = null;
+  public userLocation: Location | null = null;
+  public isLoadingChart: boolean = false;
+
+
+
+  public frozenBreakdown: FrozenBreakdownHour[] = [];
+
 
   public userChartOptions: any = {
     responsive: true,
@@ -35,7 +45,7 @@ export class HomeComponent implements AfterViewInit {
       y: { ticks: { color: '#a7bfc9' } }
     }
   };
-  constructor(private router: Router, private transitionService: TransitionService, private authService: AuthService, private usersService: UsersService, private contractService: ContractService) {
+  constructor(private router: Router, private transitionService: TransitionService, private authService: AuthService, private usersService: UsersService, private contractService: ContractService, private locationService: LocationService, private nodeService: NodeService) {
     this.authService.user$.subscribe(user => {
       this.userRole = user?.roles?.[0] || null;
       this.username = user?.username || null;
@@ -96,7 +106,34 @@ export class HomeComponent implements AfterViewInit {
     this.usersService.getConsumptionPointByUsername(username).subscribe({
       next: (point) => {
         this.userConsumptionPoint = point;
+        this.contractService.getAllContracts().subscribe(contracts => {
+          const matchedContract = contracts.find(c => c.address === point.address);
+          if (matchedContract?.id != null) {
+            this.locationService.getLocationByContractId(matchedContract.id).subscribe({
+              next: (loc) => this.userLocation = loc,
+              error: (err) => {
+                console.error("❌ Eroare la obținerea locației:", err);
+                this.userLocation = null;
+              }
+            });
+          }
+        });
 
+        if (this.username) {
+          this.isLoadingChart = true;
+          this.nodeService.getFrozenBreakdown(this.username).subscribe({
+            next: (data) => {
+              console.log("✅ Breakdown loaded:", data);
+              this.frozenBreakdown = data;
+              setTimeout(() => {
+                this.isLoadingChart = false;
+              }, 10000); 
+            },
+            error: (err) => {console.error('❌ Failed to load breakdown:', err)
+              this.isLoadingChart = false;
+            }
+          });
+        }
 
       },
       error: err => console.error('❌ Error fetching user consumption point:', err)
@@ -172,19 +209,19 @@ export class HomeComponent implements AfterViewInit {
       console.error("❌ No consumption point address to unassign.");
       return;
     }
-  
+
     const currentContract = this.unassignedNodes.find(
       node => node.address === this.userConsumptionPoint.address
     );
-  
+
     const addressToUnassign = this.userConsumptionPoint.address;
-  
+
     this.contractService.getAllContracts().subscribe({
       next: (contracts) => {
         const matched = contracts.find(c =>
           c.address.toLowerCase() === addressToUnassign.toLowerCase()
         );
-  
+
         if (matched) {
           this.contractService.updateContract(matched.id!, {
             owner: '0x0000000000000000000000000000000000000000'
@@ -203,6 +240,45 @@ export class HomeComponent implements AfterViewInit {
       error: err => console.error("❌ Failed to fetch contracts for unassigning", err)
     });
   }
+
+  public breakdownMetricOptions = [
+    { key: 'consumption', label: 'Consumption' },
+    { key: 'fromRenewable', label: 'From Renewable' },
+    { key: 'fromBattery', label: 'From Battery' },
+    { key: 'fromGrid', label: 'From Grid' },
+    { key: 'globalTarget', label: 'Global Plan Target' }
+  ];
+  public selectedMetric: string = 'consumption';
+  
+  public get breakdownChartData() {
+    if (!this.frozenBreakdown?.length || !this.selectedMetric) return { labels: [], datasets: [] };
+  
+    const values = this.frozenBreakdown.map((hour: any) => hour[this.selectedMetric]);
+  
+    return {
+      labels: this.frozenBreakdown.map((_, i) => `${i}:00`),
+      datasets: [
+        {
+          label: this.breakdownMetricOptions.find(opt => opt.key === this.selectedMetric)?.label || '',
+          data: values,
+          backgroundColor: 'rgb(255, 242, 0)',
+          borderColor: '#3fe66c',
+          borderWidth: 1
+        }
+      ]
+    };
+  }
+  
+  public breakdownChartOptions = {
+    responsive: true,
+    scales: {
+      x: { ticks: { color: '#a7bfc9' } },
+      y: { beginAtZero: true, ticks: { color: '#a7bfc9' } }
+    },
+    plugins: {
+      legend: { labels: { color: '#e8fdfd' } }
+    }
+  };
   
 
 

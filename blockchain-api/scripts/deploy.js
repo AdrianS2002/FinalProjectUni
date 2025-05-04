@@ -50,6 +50,20 @@ const InsertContract = (name, address, owner, type) => {
 };
 
 
+const sqlAddLocation = "INSERT INTO locations (contract_id, country, city, address) VALUES (?, ?, ?, ?)";
+
+function InsertLocation(contractId, country, city, address) {
+    db.query(sqlAddLocation, [contractId, country, city, address], (err) => {
+        if (err) {
+            console.error("❌ SQL Insert Location Error:", err.sqlMessage || err);
+            console.error("Query:", sqlAddLocation);
+            console.error("Params:", { contractId, country, city, address });
+        } else {
+            console.log(`📍 Inserted location: ${country}, ${city}, ${address} for contract ${contractId}`);
+        }
+    });
+}
+
 DeleteAll = () => {
     db.query(sqlDeleteAllContracts, (err, result) => {
         if (err) {
@@ -117,6 +131,11 @@ async function runPSO(globalContract, nodes, iterations = 3) {
     console.log("✅ Plan finalized in contract.");
 }
 
+async function getContractIdByAddress(address) {
+    const [rows] = await db.promise().query("SELECT id FROM contracts WHERE address = ?", [address]);
+    return rows.length > 0 ? rows[0].id : null;
+}
+
 
 
 // Connect to DB, delete all contracts,
@@ -127,8 +146,8 @@ async function main() {
     db = mysql.createConnection(db_config); // Recreate the connection, since the old one cannot be reused.
 
     console.log('Connecting... ');
-    db.connect(function (err) {              
-        if (err) {                                     
+    db.connect(function (err) {
+        if (err) {
             console.log('error when connecting to db:', err);
         }
     });
@@ -147,7 +166,7 @@ async function main() {
 
     // for (let i = 0; i < nodeParams.length; i++) {
     //     const node = nodeParams[i];
-    
+
     //     node.initialPosition = scaleArray(node.initialPosition);
     //     node.initialVelocity = scaleArray(node.initialVelocity);
     //     node.initialTariff = scaleArray(node.initialTariff);
@@ -206,30 +225,30 @@ async function main() {
         }
 
         let ownerAddress = "0x0000000000000000000000000000000000000000";
-        
-        if(i === 0)
-        {
+
+        if (i === 0) {
             ownerAddress = "0x727d94033a8e61a8911ff9d84ae72222565eab09";
         }
-        else if(i === 1)
-        {
+        else if (i === 1) {
             ownerAddress = "0x09DB0a93B389bEF724429898f539AEB7ac2Dd55f";
         }
-        else if(i === 2)
-        {
+        else if (i === 2) {
             ownerAddress = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
         }
         // Salvează nodul în baza de date
-        InsertContract(`Node ${i + 1}`, node.target, ownerAddress , "Node");
+        InsertContract(`Node ${i + 1}`, node.target, ownerAddress, "Node");
+        const contractId = await getContractIdByAddress(node.target);
+
+        InsertLocation(contractId, "Romania", `Cluj-Napoca`, `Nicolae Titulescu Nr. ${i + 1}`);
     }
 
     // Save contracts in database using .target
     InsertContract("GlobalContract", globalContract.target, accounts[0].address, "GlobalContract");
 
-  //  const TestContract = await ethers.getContractFactory("TestContract");
-   // const testContract = await TestContract.connect(accounts[1]).deploy(100);
+    //  const TestContract = await ethers.getContractFactory("TestContract");
+    // const testContract = await TestContract.connect(accounts[1]).deploy(100);
     //await testContract.waitForDeployment();
-   // await InsertContractWithUUID("d00597e0-2e5c-4487-ac6c-72866ad3514c", "TestContract", testContract.target, accounts[1].address, "TestContract");
+    // await InsertContractWithUUID("d00597e0-2e5c-4487-ac6c-72866ad3514c", "TestContract", testContract.target, accounts[1].address, "TestContract");
 
     console.log("===========================================");
     db.query('SELECT * FROM contracts', (err, results) => {
@@ -249,7 +268,7 @@ async function main() {
     // Opțional: verifici frozen cost-ul:
     const frozenCost = await globalContract.bestGlobalCost();
     console.log(`💰 Frozen best global cost after deploy optimization: ${frozenCost}`);
-    
+
 }
 
 main()
