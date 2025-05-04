@@ -398,7 +398,7 @@ button {
     justify-content: center;
     margin-top: 1rem;
     font-size: 0.9rem;
-    color: #333;
+    color: #605f5f;
 }
 
 .legend-box {
@@ -410,3 +410,49 @@ button {
     border: 1px solid #ccc;
     vertical-align: middle;
 }
+
+.breakdown-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .dropdown-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 45%;
+  }
+  
+  .dropdown-group label {
+    font-weight: bold;
+    color: var(--input-text);
+    margin-bottom: 0.4rem;
+    cursor: pointer;
+  }
+  
+  select.custom-dropdown {
+    background-color: var(--secondary-bg);
+    color: var(--input-text);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-family: var(--font-primary);
+    padding: 0.6rem 1rem;
+    appearance: none; 
+    cursor: pointer;
+  }
+  
+  select.custom-dropdown option {
+    background-color: var(--secondary-bg); 
+    color: var(--input-text); 
+    cursor: pointer;
+  }
+  
+  select.custom-dropdown option:hover,
+  select.custom-dropdown option:checked {
+    background-color: var(--button-hover-bg); 
+    color: var(--primary-bg); 
+    cursor: pointer;
+  }

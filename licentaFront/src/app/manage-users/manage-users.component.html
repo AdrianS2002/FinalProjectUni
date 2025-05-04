@@ -32,16 +32,6 @@
               [clearable]="false" class="custom-ng-select"></ng-select>
           </ng-template>
         </td> 
-        <!-- <td class="selection">
-          <div *ngIf="editingUserId !== user.id; else contractSelect">
-            <span (click)="startEditing(user.id)">{{ getContractNameForUser(user.address) || 'Assign' }}</span>
-          </div>
-          <ng-template #contractSelect>
-            <ng-select [items]="contractDropdownOptions" bindLabel="name" bindValue="id"
-              [(ngModel)]="selectedContractId" (change)="assignContract(user)" (blur)="stopEditing()"
-              [clearable]="false" class="custom-ng-select"></ng-select>
-          </ng-template>
-        </td> -->
         <td class="selection">
           <span>
             {{ getContractNameForUser(user.address) || 'No Contract Assigned' }}
@@ -54,19 +44,3 @@
       </tr>
     </tbody>
   </table> 
-  <!-- <h1>Manage Users</h1>
-
-  <div *ngIf="isLoading" class="loading-message">Loading users...</div>
-  <div *ngIf="error" class="error-message">{{ error }}</div>
-
-  <div class="grid-container" *ngIf="!isLoading && users.length">
-    <ag-grid-angular
-    class="ag-theme-quartz"
-    [rowData]="users"
-    [columnDefs]="columnDefs"
-    [defaultColDef]="defaultColDef"
-    [animateRows]="true"
-    (cellValueChanged)="onCellValueChanged($event)">
-  </ag-grid-angular>
-  </div>
-</div> -->

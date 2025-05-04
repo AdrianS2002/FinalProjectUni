@@ -101,4 +101,24 @@ router.get('/best-global-plan', async (req, res) => {
     }
 });
 
+
+router.get('/node-addresses', async (req, res) => {
+    try {
+        const result = await globalService.getNodeAddresses();
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.get('/personalBestScoreByAddress/:address', async (req, res) => {
+    try {
+      const result = await globalService.getPersonalBestScoreByAddress(req.params.address);
+      res.json({ score: result.score.toString() });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+
 module.exports = router;

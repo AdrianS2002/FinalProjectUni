@@ -9,9 +9,11 @@ import { Nodes } from './nodes';
 import { LoadingSpinnerChartComponent } from "../loading-spinner-chart/loading-spinner-chart.component";
 import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
-import { NodeService } from '../services/node.service';
-import { UsersService } from '../services/users.service';
+import { FrozenBreakdownHour, NodeService } from '../services/node.service';
+import { User, UsersService } from '../services/users.service';
 import zoomPlugin from 'chartjs-plugin-zoom';
+import { ContractService } from '../services/contract.service';
+import { forkJoin, map } from 'rxjs';
 Chart.register(...registerables, MatrixController, MatrixElement, zoomPlugin);
 
 @Component({
@@ -50,7 +52,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
     }
   };
 
- 
+
 
   heatmapData: any;
   heatmapOptions: any;
@@ -97,11 +99,26 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
     renewable: false
   };
 
+
+  public breakdownData: any = null;
+  public breakdownOptions: any = null;
+  public isLoadingBreakdown: boolean = false;
+  public breakdownUsers: User[] = [];
+  public selectedBreakdownUser: string | null = null;
+  public breakdownMetricOptions = [
+    { key: 'consumption', label: 'Consumption' },
+    { key: 'fromRenewable', label: 'From Renewable' },
+    { key: 'fromBattery', label: 'From Battery' },
+    { key: 'fromGrid', label: 'From Grid' },
+    { key: 'globalTarget', label: 'Global Target' }
+  ];
+  public selectedBreakdownMetric: string = 'consumption';
+
   // Pentru grafice de tip "line" (poziții, capacitate)
   chartLineOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
     plugins: {
-     
+
       zoom: {
         pan: {
           enabled: true,
@@ -124,7 +141,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
   chartBarOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
     plugins: {
-      
+
     },
     scales: {
       x: { title: { display: true, text: 'Hour' } },
@@ -143,13 +160,39 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
     }
   };
 
+  costPieData: ChartConfiguration<'pie'>['data'] = {
+    labels: [],
+    datasets: [{ data: [], backgroundColor: [] }]
+  };
+  
+  costPieOptions: ChartConfiguration<'pie'>['options'] = {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom'
+      },
+      tooltip: {
+        callbacks: {
+          label: function (context) {
+            const label = context.label || '';
+            const value = context.raw || 0;
+            return `${label}: ${value} units`;
+          }
+        }
+      }
+    }
+  };
 
-  constructor(private optimizationService: OptimizationService, private router: Router, private authService: AuthService, private nodeService: NodeService, private usersService: UsersService) {
+
+  constructor(private optimizationService: OptimizationService, private router: Router, private authService: AuthService, private nodeService: NodeService, private usersService: UsersService, private contractService: ContractService) {  
     this.authService.user$.subscribe(user => {
       this.userRole = user?.roles?.[0] || null;
       this.username = user?.username || null;
     })
   }
+
+
 
   fetchPlanForHour(): void {
     this.isLoading1 = true;
@@ -182,6 +225,20 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
     this.loadNodeData();
     this.loadInitialNodeData();
     this.calculateInitialCost();
+    if (this.userRole === 'MANAGER') {
+      // 🔹 Pasul 1: ia toate contractele
+      this.contractService.getAllContracts().subscribe(contracts => {
+        const validOwnerAddresses = contracts
+          .filter(c => c.type === 'Node' && c.owner && c.owner !== '0x0000000000000000000000000000000000000000')
+          .map(c => c.owner.toLowerCase());
+        this.usersService.getAllUsers().subscribe(users => {
+          this.breakdownUsers = users.filter(u =>
+            u.address && validOwnerAddresses.includes(u.address.toLowerCase())
+          );
+        });
+      });
+      this.generateCostContributionChart();
+    }
   }
 
   loadData(): void {
@@ -556,7 +613,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
     const labels = this.batteryCharge.map((_, i) => `Hour ${i}`);
     this.batteryChartData = {
       labels,
-      
+
       datasets: [
         {
           label: 'Battery Charge',
@@ -574,7 +631,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
           backgroundColor: 'rgb(232, 248, 6)'
         }
       ],
-      
+
     };
 
     console.log("✅ Battery chart data (actualizat):", this.batteryChartData);
@@ -588,7 +645,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
 
     this.capacityChartData = {
       labels,
-      
+
       datasets: [
         {
           label: 'Maximum Capacity',
@@ -612,7 +669,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
           fill: false
         }
       ],
-      
+
     };
     console.log("Capacity chart data:", this.capacityChartData);
   }
@@ -662,7 +719,7 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
       console.warn("⚠️ positionChart not found");
     }
   }
-  
+
   resetZoomCapacity() {
     console.log('🔁 resetZoomCapacity triggered');
     const chart = this.charts.find(c => c.chart?.canvas?.id === 'capacityChart');
@@ -673,5 +730,86 @@ export class OptimizationComponent implements OnInit, AfterViewInit {
       console.warn('⚠️ capacityChart not found');
     }
   }
+
+
+  loadBreakdownForUser(username: string): void {
+    this.isLoadingBreakdown = true;
+    this.breakdownData = null;
+
+    this.nodeService.getFrozenBreakdown(username).subscribe({
+      next: (hours) => {
+        const labels = hours.map((_, i) => `${i}:00`);
+        const values = hours.map(h => h[this.selectedBreakdownMetric as keyof FrozenBreakdownHour]);
+
+
+        this.breakdownData = {
+          labels,
+          datasets: [
+            {
+              label: this.breakdownMetricOptions.find(m => m.key === this.selectedBreakdownMetric)?.label || '',
+              data: values,
+              backgroundColor: 'rgb(255, 242, 0)',
+              borderColor: '#3fe66c',
+              borderWidth: 1
+            }
+          ]
+        };
+
+        this.breakdownOptions = {
+          responsive: true,
+          scales: {
+            x: { ticks: { color: '#a7bfc9' } },
+            y: { beginAtZero: true, ticks: { color: '#a7bfc9' } }
+          },
+          plugins: { legend: { labels: { color: '#e8fdfd' } } }
+        };
+
+        setTimeout(() => this.isLoadingBreakdown = false, 10000); // spinner 10s
+      },
+      error: (err) => {
+        console.error('❌ Failed to load breakdown:', err);
+        this.isLoadingBreakdown = false;
+      }
+    });
+  }
+  generateCostContributionChart(): void {
+    this.nodeService.getNodeAddresses().subscribe(addresses => {
+      const scoreRequests = addresses.map(addr =>
+        this.nodeService.getPersonalBestScoreByAddress(addr).pipe(
+          map(score => ({ address: addr, score }))
+        )
+      );
   
+      forkJoin(scoreRequests).subscribe(results => {
+        const labels = results.map(r => r.address.slice(0, 6) + '...');
+        const data = results.map(r => r.score);
+        const colors = labels.map((_, i) => `hsl(${i * 60}, 70%, 50%)`);
+  
+        this.costPieData = {
+          labels,
+          datasets: [{
+            data,
+            backgroundColor: colors
+          }]
+        };
+  
+        console.log("✅ Cost Pie Chart:", this.costPieData);
+      });
+    });
+  }
+  
+  setCostPieData(costMap: Record<string, number>) {
+    const labels = Object.keys(costMap);
+    const data = Object.values(costMap);
+    const colors = labels.map((_, i) => `hsl(${i * 60}, 70%, 50%)`); 
+  
+    this.costPieData = {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors
+      }]
+    };
+  }
+
 }

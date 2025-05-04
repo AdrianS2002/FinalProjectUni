@@ -432,4 +432,59 @@ contract Node {
     function getFlexibilityBelow() public view returns (uint[] memory) {
         return flexibilityBelow;
     }
+
+    struct HourlyBreakdown {
+    int consumption;
+    bool isInjection;
+    uint fromRenewable;
+    uint fromBattery;
+    uint fromGrid;
+    int globalTarget;
+    int deviationFromGlobal;
+}
+
+function getFrozenEnergyBreakdown() public view returns (HourlyBreakdown[] memory) {
+    uint len = personalBestPosition.length;
+    HourlyBreakdown[] memory breakdown = new HourlyBreakdown[](len);
+    int[] memory globalPlan = globalContract.getBestGlobalPlan();
+
+    for (uint i = 0; i < len; i++) {
+        int cons = personalBestPosition[i];
+        HourlyBreakdown memory hour;
+
+        hour.consumption = cons;
+        hour.isInjection = cons < 0;
+        hour.globalTarget = globalPlan.length == len ? globalPlan[i] : int(0);
+        hour.deviationFromGlobal = cons - hour.globalTarget;
+
+        if (cons > 0) {
+            uint remaining = uint(cons);
+            uint renew = frozenRenewableGeneration[i];
+            uint battery = frozenBatteryCharge[i];
+
+            if (renew >= remaining) {
+                hour.fromRenewable = remaining;
+                remaining = 0;
+            } else {
+                hour.fromRenewable = renew;
+                remaining -= renew;
+            }
+
+            if (battery >= remaining) {
+                hour.fromBattery = remaining;
+                remaining = 0;
+            } else {
+                hour.fromBattery = battery;
+                remaining -= battery;
+            }
+
+            hour.fromGrid = remaining;
+        }
+
+        breakdown[i] = hour;
+    }
+
+    return breakdown;
+}
+
 }

@@ -131,6 +131,30 @@ async function getFrozenGlobalCost(contract_address) {
     }
   }
 
+  async function getNodeAddresses(contract_address) {
+    const contract = new ethers.Contract(contract_address, abi, provider);
+    try {
+        let result = await contract.getNodeAddresses();
+        return { nodeAddresses: result };
+    } catch (e) {
+        console.log(e);
+        return new EthErrors.MethodCallError("GlobalContract", "getNodeAddresses", "getNodeAddresses");
+    }
+}
+
+async function getPersonalBestScoreByAddress(contract_address, nodeAddress) {
+    const contract = new ethers.Contract(contract_address, abi, provider);
+    try {
+      const result = await contract.nodeResults(nodeAddress);
+      return { score: result.bestScore };
+    } catch (e) {
+      console.log(e);
+      return new EthErrors.MethodCallError("GlobalContract", "getPersonalBestScoreByAddress", "nodeResults.bestScore");
+    }
+  }
+  
+  
+
 
 module.exports = {
     computeGlobalOptimalPlan,
@@ -141,5 +165,7 @@ module.exports = {
     getBestPosition,
     getFrozenGlobalCost,   
     getBestGlobalPlan,
-    getGlobalPlanHistory
+    getGlobalPlanHistory,
+    getNodeAddresses,
+    getPersonalBestScoreByAddress
 };

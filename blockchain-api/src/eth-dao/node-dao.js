@@ -23,7 +23,7 @@ function convertResultToArray(result) {
     }
 }
 
-// ✅ Actualizează viteza și poziția (doar dacă timestamp-ul global s-a schimbat)
+//  Actualizează viteza și poziția (doar dacă timestamp-ul global s-a schimbat)
 async function updateVelocityAndPosition(contract_address, ownerAddress, global_contract_address) {
     const signer = await getSignerForUser(ownerAddress);
     const contract = new ethers.Contract(contract_address, abi, signer);
@@ -83,31 +83,31 @@ async function getObjectiveFunctionResult(contract_address, position) {
     }
 }
 
-// ✅ Obține timestamp-ul global cunoscut de nod
+//  Obține timestamp-ul global cunoscut de nod
 async function getLastKnownGlobalTimestamp(contract_address) {
     const contract = new ethers.Contract(contract_address, abi, provider);
     try {
         let result = await contract.lastKnownGlobalTimestamp();
-        return result; // ✅ NU `{ lastKnownGlobalTimestamp: result }`
+        return result; //  NU `{ lastKnownGlobalTimestamp: result }`
     } catch (e) {
         console.log(e);
         return new EthErrors.MethodCallError("Node", "getLastKnownGlobalTimestamp", "lastKnownGlobalTimestamp");
     }
 }
 
-// ✅ Obține timestamp-ul global actualizat
+//  Obține timestamp-ul global actualizat
 async function getLastUpdatedTimestamp(contract_address) {
     const contract = new ethers.Contract(contract_address, abi, provider);
     try {
         let result = await contract.getLastUpdatedTimestamp();
-        return result; // ✅ NU `{ lastUpdatedTimestamp: result }`
+        return result; //  NU `{ lastUpdatedTimestamp: result }`
     } catch (e) {
         console.log(e);
         return new EthErrors.MethodCallError("GlobalContract", "getLastUpdatedTimestamp", "getLastUpdatedTimestamp");
     }
 }
 
-// ✅ Obține scorul cel mai bun personal
+// Obține scorul cel mai bun personal
 async function getPersonalBestScore(contract_address) {
     const contract = new ethers.Contract(contract_address, abi, provider);
     try {
@@ -119,7 +119,7 @@ async function getPersonalBestScore(contract_address) {
     }
 }
 
-// ✅ Obține poziția cea mai bună personală
+//  Obține poziția cea mai bună personală
 async function getPersonalBestPosition(contract_address) {
     const contract = new ethers.Contract(contract_address, abi, provider);
     try {
@@ -131,7 +131,7 @@ async function getPersonalBestPosition(contract_address) {
     }
 }
 
-// ✅ Actualizează cea mai bună poziție și trimite la Global Contract
+//  Actualizează cea mai bună poziție și trimite la Global Contract
 async function updateBestPositions(contract_address, ownerAddress) {
     const signer = await getSignerForUser(ownerAddress);
     const contract = new ethers.Contract(contract_address, abi, signer);
@@ -259,6 +259,29 @@ async function getFlexibilityBelow(contractAddress) {
     }
 }
 
+async function getFrozenEnergyBreakdown(contractAddress) {
+    const contract = loadNodeContract(contractAddress);
+    try {
+        const result = await contract.getFrozenEnergyBreakdown();
+
+        // Convertim fiecare element în obiect JS lizibil
+        const breakdown = result.map((entry, index) => ({
+            hour: index,
+            consumption: Number(entry.consumption),
+            isInjection: entry.isInjection,
+            fromRenewable: Number(entry.fromRenewable),
+            fromBattery: Number(entry.fromBattery),
+            fromGrid: Number(entry.fromGrid),
+            globalTarget: Number(entry.globalTarget),
+        }));
+
+        return breakdown;
+    } catch (e) {
+        console.error("❌ Eroare în getFrozenEnergyBreakdown:", e);
+        throw new Error("Failed to fetch frozen energy breakdown");
+    }
+}
+
 module.exports = {
     updateVelocityAndPosition,
     getPosition,
@@ -276,5 +299,6 @@ module.exports = {
     getBatteryCapacity,
     getRenewableGeneration,
     getFlexibilityAbove,
-    getFlexibilityBelow
+    getFlexibilityBelow,
+    getFrozenEnergyBreakdown
 };

@@ -154,5 +154,15 @@ router.get('/tariff/:username', async (req, res) => {
       res.status(500).json({ error: err.message });
     }
   });
+
+  router.get('/frozenBreakdown/:username', async (req, res) => {
+    try {
+        const data = await nodeService.getFrozenEnergyBreakdown(req.params.username);
+        res.json(stringifyBigInt(data));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
   
 module.exports = router;

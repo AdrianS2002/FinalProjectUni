@@ -262,6 +262,22 @@ async function getFlexibilityBelow(username) {
     }
 }
 
+async function getFrozenEnergyBreakdown(username) {
+    try {
+        let { contractAddress } = await getNodeContractForUser(username);
+        console.log("📦 [getFrozenEnergyBreakdown] Contract address for", username, ":", contractAddress);
+
+        const result = await nodeDAO.getFrozenEnergyBreakdown(contractAddress);
+        console.log("📊 Frozen energy breakdown:", result);
+
+        return Promise.resolve({ breakdown: result });
+    } catch (e) {
+        console.error("❌ Error in getFrozenEnergyBreakdown:", e);
+        return Promise.reject(e);
+    }
+}
+
+
 
 module.exports = {
     updateVelocityAndPosition,
@@ -280,5 +296,6 @@ module.exports = {
     getBatteryCapacity,
     getRenewableGeneration,
     getFlexibilityAbove,
-    getFlexibilityBelow
+    getFlexibilityBelow,
+    getFrozenEnergyBreakdown
 };
