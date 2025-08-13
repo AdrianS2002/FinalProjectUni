@@ -12,6 +12,9 @@ async function loadCSVData() {
         fs.createReadStream("data/nodes.csv")
             .pipe(csv())
             .on("data", (row) => {
+                 if (Object.values(row).every(value => value === '')) {
+        return;
+    }
                 try {
                     nodeParams.push({
                         initialPosition: JSON.parse(JSON.stringify(fixArrayFormat(row.initialPosition))), 
@@ -36,7 +39,7 @@ async function loadCSVData() {
                 }
 
                 // 🔹 Afișăm conținutul nodeParams înainte de returnare
-                console.log("🔹 Before returning nodeParams:", JSON.stringify(nodeParams, null, 2));
+              //  console.log("🔹 Before returning nodeParams:", JSON.stringify(nodeParams, null, 2));
 
                 resolve(nodeParams);
             })

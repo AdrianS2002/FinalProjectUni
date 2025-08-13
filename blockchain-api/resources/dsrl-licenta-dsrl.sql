@@ -43,6 +43,28 @@ LOCK TABLES `contracts` WRITE;
 /*!40000 ALTER TABLE `contracts` ENABLE KEYS */;
 UNLOCK TABLES;
 
+DROP TABLE IF EXISTS `locations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+
+CREATE TABLE `locations` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `contract_id` INT NOT NULL UNIQUE,
+  `country` VARCHAR(100) NOT NULL,
+  `city` VARCHAR(100) NOT NULL,
+  `address` VARCHAR(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_locations_contract`
+    FOREIGN KEY (`contract_id`) REFERENCES `contracts`(`id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+
+LOCK TABLES `locations` WRITE;
+/*!40000 ALTER TABLE `locations` DISABLE KEYS */;
+UNLOCK TABLES;
+
 --
 -- Table structure for table `credentials`
 --

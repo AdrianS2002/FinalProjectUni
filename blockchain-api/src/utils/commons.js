@@ -1,7 +1,12 @@
 const SqlErrors = require("../models/db-errors.js");
 const user = require("../db-dao/models/account.js");
 const uuid = require("uuid");
-
+const { ethers } = require("hardhat");
+const abi = require("../../artifacts/contracts/Node.sol/Node.json").abi;
+const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545", {
+    name: "localnet",
+    chainId: 1337
+});
 function generateUUID()
 {
     return uuid.v4();
@@ -41,10 +46,22 @@ function listToDTO(list, model)
     return dtoList;
 }
 
+async function getHardhatAccounts() {
+    const accounts = await ethers.getSigners();
+    return accounts.map(signer => signer.address);
+}
+
+function loadNodeContract(contractAddress) {
+    return new ethers.Contract(contractAddress, abi, provider);
+  }
+
 module.exports ={
     generateUUID,
     getUnique,
     listToDTO,
     getSignerForUser,
-    getDefaultSigner
+    getDefaultSigner,
+    provider,
+    getHardhatAccounts,
+    loadNodeContract
 }

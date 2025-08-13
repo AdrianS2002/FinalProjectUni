@@ -1,5 +1,7 @@
 const ContractType = {
-    TEST: "TEST"
+    TEST: "TEST",
+    NODE: "Node",
+    GLOBAL: "GlobalContract"
 };
 
 const TYPE = {
